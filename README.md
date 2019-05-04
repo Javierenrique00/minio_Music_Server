@@ -140,9 +140,13 @@ To check that the service you have to go to the path **/usr/local/etc/rc.d/**
 
 Then run the command:
 
-service musicminio start
+**service musicminio start**
 
 Check that if you copy a .mp3 file to your minio server the index gets recreated.
+
+Also you can check that the service is running going to **Display System Process** in Freenas console
+
+![alt text](./images/img8.jpg "Jail Manager")
 
 ------
 
