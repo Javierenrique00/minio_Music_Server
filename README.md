@@ -49,9 +49,24 @@ Check version
 7. run javascript program
 
     **node inicio.js**
-    
+
 8. Make any change to the Music library to see if the music.index file appears in the bucket.
 9. You can delete or put any mp3 file or directory to see the change in the music.index file (this file shows the updates after 30 seconds of inactivity in the minio server)
 ----------------------
+
+## Notes: configuration of a Minio server in a freenas
+
+**freenas**  ( https://freenas.org/ ) is an opensource operating system based in a Freebsd operating system that you can use to host a Minio instance. In the version 11.2-U3 you can start a Minio instance as a service, you don't have to create aditional VM or Jail to start Minio.
+
+I have an old machine that I use for my Freenas server.
+
+The specs for my freenas box are:
+Intel core 2 Quad CPU Q9450 @2.66GHz (4 cores)
+8 GB RAM
+2x1TB HDs in mirror for data as a ZFS Pool
+
+Remember that you neet to have a Pool for Jail Manager Activated
+
+![Activated a Pool](https://github.com/Javierenrique00/minio_Music_Server/tree/master/images/img1.jpg)
 
     
