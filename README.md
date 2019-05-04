@@ -8,7 +8,9 @@ I made a Android program to read the index and download music from your Minio se
 Thanks to:
 
 Music-Metadata javascript:  https://github.com/borewit/music-metadata#readme
+
 Minio Javascript Client api: https://docs.min.io/docs/javascript-client-api-reference.html
+
 Minio Server configuration: https://docs.min.io/docs/minio-quickstart-guide.html
 
 
