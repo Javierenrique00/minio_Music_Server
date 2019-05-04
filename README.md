@@ -56,17 +56,39 @@ Check version
 
 ## Notes: configuration of a Minio server in a freenas
 
-**freenas**  ( https://freenas.org/ ) is an opensource operating system based in a Freebsd operating system that you can use to host a Minio instance. In the version 11.2-U3 you can start a Minio instance as a service, you don't have to create aditional VM or Jail to start Minio.
+**Freenas**  ( https://freenas.org/ ) is an opensource operating system based in a Freebsd operating system that you can use to host a Minio instance. In the version 11.2-U3 you can start a Minio instance as a service, you don't have to create aditional VM or Jail to start Minio.
 
 I have an old machine that I use for my Freenas server.
 
 The specs for my freenas box are:
+
 Intel core 2 Quad CPU Q9450 @2.66GHz (4 cores)
+
 8 GB RAM
+
 2x1TB HDs in mirror for data as a ZFS Pool
+
+
 
 Remember that you neet to have a Pool for Jail Manager Activated
 
-![alt text](https://github.com/Javierenrique00/minio_Music_Server/tree/master/images/img1.jpg "Jail Manager")
+![alt text](./images/img1.jpg "Jail Manager")
 
+To activate Minio as a Service
+
+### Go to Services for configuration and Start S3.
+
+![alt text](./images/img2.jpg "Jail Manager")
+
+### In configuration check that you have a valid Ip Address, could be the same that you use for accesing console
+
+![alt text](./images/img3.jpg "Jail Manager")
+
+Once you start S3 service (Minio) you can go to a web browser an go to **IPADDRESS:9000** that get you to:
+
+![alt text](./images/img4.jpg "Jail Manager")
+
+You can use the Minio Browser to put the Music Library (Bunch of .mp3 files) in a new Bucket
+
+![alt text](./images/img5.jpg "Jail Manager")
 
