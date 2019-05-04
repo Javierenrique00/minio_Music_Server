@@ -6,13 +6,14 @@ The idea is that you have your Music Library copied to a Minio server (just a bu
 I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage, free version available)
 
 Thanks to:
+
 Music-Metadata javascript:  https://github.com/borewit/music-metadata#readme
 Minio Javascript Client api: https://docs.min.io/docs/javascript-client-api-reference.html
 Minio Server configuration: https://docs.min.io/docs/minio-quickstart-guide.html
 
 
 ----------------------
-### Instalation for server:
+### Server installation:
 
 1. Install a working Minio instance. ( https://min.io/ ) S3 compatible storage.
 2. Copy your music library to a bucket in the Minio Instance. (To access music from the Minio server to the android program you have to make the bucket public)
