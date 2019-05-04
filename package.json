@@ -1,0 +1,17 @@
+{
+  "name": "javascriptclient",
+  "version": "1.0.0",
+  "description": "Cliente Javascript de Minio example",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Javier Ramirez",
+  "license": "ISC",
+  "dependencies": {
+    "collections": "^5.1.8",
+    "kefir": "^3.8.6",
+    "minio": "^7.0.5",
+    "music-metadata": "^3.5.3"
+  }
+}
