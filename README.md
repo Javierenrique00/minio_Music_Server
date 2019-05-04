@@ -18,8 +18,11 @@ Minio Server configuration: https://docs.min.io/docs/minio-quickstart-guide.html
 2. Copy your music library to a bucket in the Minio Instance. (To access music from the Minio server to the android program you have to make the bucket public)
 3. In any server you can install Node (Nodejs) 6 version or newer.
 4. Copy the node server program - minio_Music_server by cloning repository or copy javascript files from the github repository (*.js , *.json) to your working directory (any directory for the javascript program)
-5. Configure access to minio in the file inicio.js .  change in accordance to your configuration
+5. Configure access to minio in the file inicio.js .  change in accordance to your configuration.
+
+#### inicio.js
 //--- Configuring Globals
+
     var bucket = "test"                     //--- name of the bucket
     var pathMusic = "music/"                //--- path to the music library that you want to index
     var indexFileName = "music.index"       //--- leave a music.index (default)
@@ -30,6 +33,7 @@ Minio Server configuration: https://docs.min.io/docs/minio-quickstart-guide.html
         accessKey: 'admin',                 //---  Minio server Access key
         secretKey: 'password'               //---  Minio server Secret Key
     });
+    
 6. From the command line in the path of your working directory run
     npm install
 7. run javascript program
