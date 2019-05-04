@@ -20,8 +20,11 @@ Minio Server configuration: https://docs.min.io/docs/minio-quickstart-guide.html
 1. Install a working Minio instance. ( https://min.io/ ) S3 compatible storage.
 2. Copy your music library to a bucket in the Minio Instance. (To access music from the Minio server to the android program you have to make the bucket public)
 3. In any server you can install Node (Nodejs) 6 version or newer. (now I have node 10 version)
+
 Check version
+
   **node --version**
+
 4. Copy the node server program - minio_Music_server by cloning repository or copy javascript files from the github repository (*.js , *.json) to your working directory (any directory for the javascript program)
 5. Configure access to minio in the file inicio.js .  change in accordance to your configuration.
 
@@ -40,9 +43,13 @@ Check version
     });
     
 6. From the command line in the path of your working directory run
+
     **npm install**
+
 7. run javascript program
+
     **node inicio.js**
+    
 8. Make any change to the Music library to see if the music.index file appears in the bucket.
 9. You can delete or put any mp3 file or directory to see the change in the music.index file (this file shows the updates after 30 seconds of inactivity in the minio server)
 ----------------------
