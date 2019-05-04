@@ -67,6 +67,6 @@ Intel core 2 Quad CPU Q9450 @2.66GHz (4 cores)
 
 Remember that you neet to have a Pool for Jail Manager Activated
 
-![Activated a Pool](https://github.com/Javierenrique00/minio_Music_Server/tree/master/images/img1.jpg)
+![alt text](https://github.com/Javierenrique00/minio_Music_Server/tree/master/images/img1.jpg "Jail Manager")
 
-    
+
