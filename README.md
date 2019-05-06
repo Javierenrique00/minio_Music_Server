@@ -29,7 +29,13 @@ Check version
 5. Configure access to minio in the file inicio.js .  change in accordance to your configuration.
 
 #### inicio.js
-//--- Configuring Globals
+
+Select S3 or Minio with:
+
+    const S3 = true  //--- false for minio, true fo Amazon S3
+
+
+//--- Configuring Globals USE for Minio
 
     var bucket = "test"                     //--- name of the bucket
     var pathMusic = "music/"                //--- path to the music library that you want to index
@@ -41,7 +47,21 @@ Check version
         accessKey: 'admin',                 //---  Minio server Access key
         secretKey: 'password'               //---  Minio server Secret Key
     });
-    
+
+----------------
+
+    //--- Configuring Globals USE for S3  Comment in case you have Minio
+    var bucket = "mipublico"                     //--- name of the bucket
+    var pathMusic = "music/"                     //--- path to the music library that you want to index
+    var indexFileName = "music.index"            //--- leave a music.index (default)
+    var minioClient = new Minio.Client({
+        endPoint: 's3.amazonaws.com',            //--- IP of Amazon
+        accessKey: 'XXXXXXXXXXX',       //---  Amazon server Access key
+        secretKey: 'XXXXXXXXXXXXXXXXXXXXX'   //---  Amazon Secret Key
+    });
+
+
+----------------    
 6. From the command line in the path of your working directory run
 
     **npm install**
