@@ -3,7 +3,9 @@ Minio music Server is a nodejs program to control a music library with metadata 
 
 The idea is that you have your Music Library copied to a Minio server (just a bunch of .mp3 files in any folder structure), then the Minio Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format.
 
-I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage, free version available)
+The program works with Minio and also with Amazon S3 storage. The difference is that in Minio it detects the changes in the music Library. With S3 you run the program each time the library changes to reindex the music library.
+
+I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage, free version available) https://play.google.com/store/apps/details?id=com.mundocreativo.javier.tabmusicminio
 
 Thanks to:
 
