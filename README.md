@@ -7,6 +7,8 @@ The program works with Minio and also with Amazon S3 storage. The difference is 
 
 I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage, free version available) https://play.google.com/store/apps/details?id=com.mundocreativo.javier.tabmusicminio
 
+![Android APP](./images/icon_128.png "App")
+
 Thanks to:
 
 Music-Metadata javascript:  https://github.com/borewit/music-metadata#readme
