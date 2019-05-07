@@ -5,15 +5,15 @@ const miModulo = require("./indexServer")
 const minio = false  //--- true for minio, false for Amazon S3 or a minio gateway 
 
 //--- Configuring Globals USE for minio
-var bucket = "bogota2"                     //--- name of the bucket
+var bucket = "test"                     //--- name of the bucket
 var pathMusic = "music/"                //--- path to the music library that you want to index
 var indexFileName = "music.index"       //--- leave a music.index (default)
 var minioClient = new Minio.Client({
-    endPoint: '192.168.0.16',            //--- IP of the Minio Music Server where the music library lives
+    endPoint: '192.168.0.8',            //--- IP of the Minio Music Server where the music library lives
     port: 9000,                         //--- Port of the Minio server (9000 is default)
     useSSL: false,                      //--- without SSL, put true for SSL access
-    accessKey: 'GOmmmmmmmmmmmmmmmmmm',                 //---  Minio server Access key
-    secretKey: 'mmmmmmmmmmmmmmmmmmmmm'       //---  Minio server Secret Key
+    accessKey: 'admin',                 //---  Minio server Access key
+    secretKey: 'password'       //---  Minio server Secret Key
 });
 
 

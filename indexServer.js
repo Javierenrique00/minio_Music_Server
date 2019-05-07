@@ -9,8 +9,11 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
   const { Readable } = require('stream')
 
   const VERSIONDB = 1
-
-
+  const musicExtensions = ["mp3","aiff","ape","wma","wmv","asf","flac","mp2","mpc","mp4","m4a","m4v","ogg","oga","mogg","wav","wma","wv"]
+  const properties = ["title","artist","album","year"]
+  const track = ["no","of"]
+  const disk = ["no","of"]
+  const format = ["duration","lossless","bitrate","sampleRate","numberOfChannels","dataformat"]
 
 
   function checkIgual(nombre,arr){
@@ -172,11 +175,21 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
 
 
   //--- copia los metadatos que nos interesan {Descarta la picture:} y otros sobre el tag 
-  //const commonMetadata = ["track","disk","title","artists","artist","album"]
-  function musicCommonMetadata(inData,nombre){
-    let outData = {"path":nombre,"title":inData.common.title,"artist":inData.common.artist,"album":inData.common.album}
-    //console.log("****"+ JSON.stringify(outData))
-    return outData
+  function musicCommonMetadata(inData,nombre,fileSize){
+
+    myObj = {"path":nombre,"filesize":fileSize}
+    properties.forEach( val =>{
+      myObj[val] = inData.common[val]
+    })
+    myObj["track_no"] = inData.common.track.no;
+    myObj["track_of"] = inData.common.track.of;
+    myObj["disk_no"] = inData.common.disk.no;
+    myObj["disk_of"] = inData.common.disk.of;
+
+    format.forEach( val =>{
+      myObj[val] = inData.format[val]
+    })
+    return myObj
   }
 
   function buscaDatosMinio(){
@@ -210,7 +223,7 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
         mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: size }).then( metadata => {
             //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
 
-            let temDatos = musicCommonMetadata(metadata,nombre)
+            let temDatos = musicCommonMetadata(metadata,nombre,size)
             listado.push(temDatos)
             console.log(temDatos)
             console.log(contAnalisis++ + "/"+contList)
@@ -233,7 +246,11 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
 
   function checkIsSong(nombre){
     let ext = nombre.substr(nombre.lastIndexOf('.') + 1);
-    if(ext=="mp3") return true
+    ext = ext.toLowerCase()
+
+    for (i = 0 ; i < musicExtensions.length ; i++){
+        if(musicExtensions[i]==ext) return true;
+    }
     return false
   }
 
