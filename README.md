@@ -5,10 +5,10 @@ Is not a server in the strict sense, because the server is Minio, or the cloud s
 
 The idea is that you have your Music Library copied to a Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Minio Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format.
 
-The program works with Minio as a server and Amazon S3 storage in a direct way, but you can configure Minio Azure Gateway and Minio GCS (google cloud storage) to serve the music files. The difference is ths in Minio it detects the changes in the music Library. With S3 and Minio Gatways you run the program each time the library changes to reindex the music library.
+The program works with Minio as a server and Amazon S3 storage in a direct way, but you can configure Minio Azure Gateway and Minio GCS (google cloud storage) to serve the music files. The difference is that in Minio it detects the changes in the music Library. With S3 and Minio Gateways you run the program each time the library changes to reindex the music library.
 
 
-![Android APP](./doc/images/img1_diagram.jpg "App")
+![Diagram](./doc/images/img1_diagram.jpg "Diagram")
 
 
 I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage, free version available) https://play.google.com/store/apps/details?id=com.mundocreativo.javier.tabmusicminio

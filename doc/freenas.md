@@ -18,25 +18,25 @@ Intel core 2 Quad CPU Q9450 @2.66GHz (4 cores)
 
 Remember that you need to have a Pool for Jail Manager Activated
 
-![alt text](./images/img1.jpg "Jail Manager")
+![img1](./images/img1.jpg "Jail Manager")
 
 To activate Minio as a Service
 
 ### Go to Services for configuration and Start S3.
 
-![alt text](./images/img2.jpg "Jail Manager")
+![img2](./images/img2.jpg "Configure S3")
 
 ### In configuration check that you have a valid Ip Address, could be the same that you use for accesing console
 
-![alt text](./images/img3.jpg "Jail Manager")
+![img3](./images/img3.jpg "Configurationr")
 
 Once you start S3 service (Minio) you can go to a web browser an go to **IPADDRESS:9000** that get you to:
 
-![alt text](./images/img4.jpg "Jail Manager")
+![img4](./images/img4.jpg "Autenticate")
 
 You can use the Minio Browser to put the Music Library (Bunch of .mp3 files) in a new Bucket
 
-![alt text](./images/img5.jpg "Jail Manager")
+![img5](./images/img5.jpg "Minio browser")
 
 ------------
 
@@ -66,7 +66,7 @@ The idea is that Nodejs program is in a jail that is run automatically each time
 
     copy the program files (*.js , *.json) from this repository to: /tmp/musicServer (this is your working directory for this program)
 
-    ![alt text](./images/img6.jpg "Jail Manager")
+    ![img6](./images/img6.jpg "List files")
 
     You can see inicio.js, indexServer.js and package.json
 
@@ -80,7 +80,7 @@ The idea is that Nodejs program is in a jail that is run automatically each time
 
     You need to add the line
 
- ![alt text](./images/img7.jpg "Jail Manager")
+ ![img7](./images/img7.jpg "Check node_enable")
 
 To check that the service you have to go to the path **/usr/local/etc/rc.d/**
 
@@ -92,7 +92,7 @@ Check that if you copy a .mp3 file to your minio server the index gets recreated
 
 Also you can check that the service is running going to **Display System Process** in Freenas console
 
-![alt text](./images/img8.jpg "Jail Manager")
+![img8](./images/img8.jpg "System process")
 
 ------
 
