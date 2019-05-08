@@ -11,9 +11,8 @@ The program works with Minio as a server and Amazon S3 storage in a direct way, 
 ![Diagram](./doc/images/img1_diagram.jpg "Diagram")
 
 
-I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage, free version available) https://play.google.com/store/apps/details?id=com.mundocreativo.javier.tabmusicminio
+I made a Android program to read the index and download music from your Minio server. (Android program is in developer stage) 
 
-![Android APP](./doc/images/icon_128.png "App")
 
 Thanks to:
 
