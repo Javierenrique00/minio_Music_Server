@@ -1,4 +1,5 @@
 
+
 exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
 
   var Minio = require('minio')
@@ -7,9 +8,10 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
   var List = require("collections/list")
   var Deque = require("collections/deque")
   const { Readable } = require('stream')
+  const extensionArray = require('./extensiones')
 
   const VERSIONDB = 1
-  const musicExtensions = ["mp3","aiff","ape","wma","wmv","asf","flac","mp2","mpc","mp4","m4a","m4v","ogg","oga","mogg","wav","wma","wv"]
+  
   const properties = ["title","artist","album","year"]
   const track = ["no","of"]
   const disk = ["no","of"]
@@ -247,6 +249,8 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
   function checkIsSong(nombre){
     let ext = nombre.substr(nombre.lastIndexOf('.') + 1);
     ext = ext.toLowerCase()
+
+    let musicExtensions = extensionArray.arrayExtensiones();
 
     for (i = 0 ; i < musicExtensions.length ; i++){
         if(musicExtensions[i]==ext) return true;
