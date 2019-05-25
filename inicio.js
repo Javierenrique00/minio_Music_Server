@@ -4,7 +4,7 @@ var Minio = require('minio')
 const miModulo = require("./indexServer")
 const miArrayExtensions = require("./extensiones")
 
-const minio = true  //--- true for minio, false for Amazon S3 or a minio gateway 
+const minio = false  //--- true for minio, false for Amazon S3 or a minio gateway 
 
 //--- Configuring Globals USE for minio on Google Cloud with minio gateway
 // var bucket = "bogota2"                     //--- name of the bucket
@@ -19,7 +19,7 @@ const minio = true  //--- true for minio, false for Amazon S3 or a minio gateway
 // });
 
 //--- Configuring Globals USE for minio
-var bucket = "test"                     //--- name of the bucket
+var bucket = "backblaze"                     //--- name of the bucket
 var pathMusic = "music/"                //--- path to the music library that you want to index
 var indexFileName = "music.index"       //--- leave a music.index (default)
 var minioClient = new Minio.Client({

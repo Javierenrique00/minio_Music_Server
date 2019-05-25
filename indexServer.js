@@ -1,5 +1,3 @@
-
-
 exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
 
   var Minio = require('minio')
@@ -8,8 +6,10 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
   var List = require("collections/list")
   var Deque = require("collections/deque")
   const { Readable } = require('stream')
+  var Kefir = require("kefir")
   const extensionArray = require('./extensiones')
 
+  //-------------
   const VERSIONDB = 1
   
   const properties = ["title","artist","album","year"]
@@ -17,104 +17,142 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
   const disk = ["no","of"]
   const format = ["duration","lossless","bitrate","sampleRate","numberOfChannels","dataformat"]
 
+//--------------- reactive version of indexServer
 
-  function checkIgual(nombre,arr){
-    for (var i = 0, tam = arr.length; i < tam; i++) {
-      if (arr[i].path === nombre) {
-          return true;
-      }
-    }
-    return false;
-  }
+  var finList$ // es el stream que se activa cuando se ha terminado el listado
+  var index$ // es el Stream con el listado
 
-  function checkDifIndex(){
-    let diferentes = 0
-    let iguales = 0
-    dirList.forEach( (element , ind) => {
-      //console.log(element.path + "="+checkIgual(element.path,musicIndex))
-      if(checkIgual(element.path,musicIndex)){
-      iguales++
-      }
-      else{
-        //-- porque es diferente
-        dirAddNew.push(element)
-        diferentes++
-      }
-    })
-    console.log("DIR->IndexDB iguales="+iguales+" diferentes="+diferentes)
 
-    diferentes = 0
-    iguales = 0
-    musicIndex.forEach( element => {
-      if(checkIgual(element.path,dirList)){
-        indexOkList.push(element)
-        iguales++
-      }
-      else{
-        diferentes++
-      }
-    })
-    console.log("IndexDB->dir iguales="+iguales+" diferentes="+diferentes)
+  finList$ = readDirectory(bucket,pathMusic);  //--- es es stream del listado
+  index$ =readIndex(bucket,indexFileName);     //--- es el stream del indice (music.index)
 
-    return
-  }
+  indexCompleto$ = index$.filter(x => x["flag"]=="EXISTENTE") //-- tiene indice
+  indexNuevo$ = index$.filter(x => x["flag"]=="NUEVO")        //-- no tiene indice y por tanto debe escribir uno nuevo
+  
+  //--- crea todo un indice nuevo
+  meta$ = Kefir.zip([finList$.take(1),indexNuevo$.take(1)])  
+  .map( x => x[0])
+  .flatten()
+  .flatMapConcat(x => loadObjectMinio(x.path,x.size,x.extension,x.id))
 
-  function copiaMusicIndexToListado(){
-    //--- limpia dirList para alimente la información a buscar en la metadata de las canciones
-    let actIndex = false
-    contAnalisis = 0
-    contList = 0
-    validList = true
-    dirList = new Deque()
-    dirAddNew.forEach(  element => {
-      dirList.push(element)
-    })
+  meta$.onValue( x =>{
+    console.log(x.id)
 
-    //--copia el musicIndex corregido indexOkList al listado para cargar la metadata al listado
-    if (indexOkList.length != musicIndex.length) actIndex = true
-    listado = []
-    indexOkList.forEach( element => {
-      listado.push(element)
-    })
+  })
 
-    // musicIndex.forEach( element => {
-    //   listado.push(element)
-    // })
-    contList = dirAddNew.length + listado.length
+  writeNewIndex$ = meta$.bufferWhile()
+  .map( x => writeNewIndex(bucket,indexFileName,x,1) )
 
-    //--- escribe el nuevo indice si hay cambios ene el listado
-    if(dirList.length == 0 && actIndex) writeNewIndex()
-  }
+  writeNewIndex$.onEnd( () =>{
+    console.log("---- Fin creacion de indice")
+
+  })
+
+  //---- Si ya existe un indice, debe comparar el directorio con el indice para ver las diferencias
+  diff$ = Kefir.zip([finList$.take(1),indexCompleto$.take(1)])
+          .map( x => {
+            let dir = x[0] //-- el directorio
+            let index = x[1].data  //-- el indice
+            let globalIndexId = x[1].globalIndexId // el id del indice leido
+            return checkDifIndex(dir,index,globalIndexId)
+          })
+  
+  newIndex$ = diff$.filter(x => x.estado=="ADDINDEX")
+  indexOk$ = diff$.filter(x => x.estado=="SOLOINDEXOK")
+  nada$ = diff$.filter(x => x.estado=="NADA")
+
+//-------------------------- filtrado a newIndex$
+  newMetadata$ = newIndex$.map(x =>x.dirNew) //--
+              .flatten()
+              .flatMapConcat( x =>{
+                  return loadObjectMinio(x.path,x.size,x.extension,x.id)
+              }).bufferWhile()
+
+  writeChangeIndex$ = Kefir.zip([newMetadata$,diff$])  
+  
+  writeChangeIndex$.onValue( x =>{
+    let globalIndexId = x[1].globalIndexId
+    let nuevoIndice = x[1].indexOk.concat(x[0])
+    writeNewIndex(bucket,indexFileName,nuevoIndice,globalIndexId+1)
+  })
+  //-------------------------- filtrado a newIndex$
+  writeIndexOk$ = indexOk$.map( x => {
+    console.log("indexOk=",x.indexOk.length)
+    writeNewIndex(bucket,indexFileName,x.indexOk,x.globalIndexId+1)
+  })
+
+  writeIndexOk$.onValue( x =>{
+    console.log("-- updating index --")
+  })
+
+  //-------------------------- filtrado a nada$
+  nada$.onValue( x => {
+    console.log("-- Index without change -- No New Index")
+  })
+
+//---------------------------------------------------------------------------------
+
+function readDirectory(bucket,pathMusic){
+  let finList$ = Kefir.stream(emitter =>{
+    let cont = 0
+    let dirList = [];
+    var stream = minioClient.listObjects(bucket,pathMusic, true)
+    stream.on('data', function(obj) {
+        let nombre = obj.name
+        if(nombre!=undefined){
+          let size = obj.size
+          //console.log("Listando:"+nombre)
+          let extension = checkIsSong(nombre)
+          if(size!=undefined && extension){
+            myExtension = getExtension(nombre)
+            dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++})
+          }
+        }
+  
+    } )
+  
+    stream.on('error', function(err) {
+      console.log(err)
+      console.log("---FIN---")
+    } )
+  
+    stream.on('end', function(obj) {
+      emitter.value(dirList);
+    } )
+  
+  })
+  return finList$
+}
 
   //--- Lista el indice de canciones actual
-  function readIndex(){
-    let size = 0
-    var tempChunk = ""
-    minioClient.getObject(bucket, indexFileName, function(err, dataStream) {
-      console.log("---Reading Index  ----")
-      let firstLine = true;
-      if (err) {
-        //---- Chequea si hay indice o nó
-        if(musicIndex.length == 0){
-          console.log("- No hay indice, por tanto hay que construirlo")
-          globalIndexId  = 0 //-- al no haber indice debe arrancar con 0
-          buscaDatosMinio()
+  function readIndex(bucket,indexFileName){
+      let index$ = Kefir.stream(emitter =>{
+      let size = 0
+      let musicIndex = []
+      let globalIndexId
+      var tempChunk = ""
+      minioClient.getObject(bucket, indexFileName, function(err, dataStream) {
+        console.log("---Reading Index  ----")
+        let firstLine = true
+        if (err) {
+          console.log("NUEVO")
+          emitter.value({"flag":"NUEVO"})
+          emitter.end()
+          return index$
         }
-        return
-      }
-      dataStream.on('data', function(chunk) {
-        console.log("Reading Chunk")
-      
-        let chunkStr = chunk.toString()
-        let divChunk = chunkStr.split("\n")
-        divChunk[0] = tempChunk + divChunk[0] //--- agrega el pedazo antes del salto de linea
-        tempChunk = divChunk[divChunk.length-1]
-        //console.log("***"+tempChunk)
-        for (var i = 0, tam = divChunk.length-1; i < tam; i++){
-          let temp = divChunk[i]
-          //console.log(temp)
-          if(firstLine){
-            //globalIndexId ojo definición de consecutivo porque ya existe.
+        dataStream.on('data', function(chunk) {
+          //console.log("Reading Chunk")
+        
+          let chunkStr = chunk.toString()
+          let divChunk = chunkStr.split("\n")
+          divChunk[0] = tempChunk + divChunk[0] //--- agrega el pedazo antes del salto de linea
+          tempChunk = divChunk[divChunk.length-1]
+          //console.log("***"+tempChunk)
+          for (var i = 0, tam = divChunk.length-1; i < tam; i++){
+            let temp = divChunk[i]
+            
+            if(firstLine){
+                          //globalIndexId ojo definición de consecutivo porque ya existe.
             let data= JSON.parse(temp)
             let versionDb = data.version
             let registers = data.registers
@@ -122,64 +160,78 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
             globalIndexId = id
             console.log("Version="+versionDb)
             console.log("Registers="+registers)
-            console.log("id="+id)
+            console.log("globalIndexId="+id)
             console.log("--------------")
             firstLine = false
-          }
-          else{
-            musicIndex.push( JSON.parse(temp) )
-          }
-        
-        }
-        size += chunk.length
-      })
-      dataStream.on('end', function() {
-        //console.log('Tamano indice = ' + size)
-        //--- Listado
-        // for (var i = 0, tam = musicIndex.length; i < tam; i++){
-        //   console.log(JSON.stringify(musicIndex[i]));
-        // }
-        //---hay que actualizar las diferencias del indice
-        checkDifIndex()
-        copiaMusicIndexToListado()
-        buscaDatosMinio()
-        
-      })
-      dataStream.on('error', function(err) {
-        console.log(err)
-      })
-    })
 
+            }
+            else{
+              musicIndex.push( JSON.parse(temp) )
+            }
+          }
+          size += chunk.length
+        })
+        dataStream.on('end', function() {
+
+          emitter.value({"flag":"EXISTENTE","data":musicIndex,"globalIndexId":globalIndexId})
+          emitter.end()
+        })
+        dataStream.on('error', function(err) {
+          console.log(err)
+        })
+      })
+
+    })
+    return index$
   }
 
-
-
-  //--- escribe el listado de las canciones
-  function writeNewIndex(){
-    const inStream = new Readable({
-      read() {}
-    });
+  
+  //--- Creamos una función que carga una archivo de minio
+  function loadObjectMinio(nombre,tamano,extension,id){
     
-    minioClient.putObject(bucket, indexFileName, inStream, function(err, etag) {
-      return console.log(err, etag) // err should be null
+    let metadatosMinio$ = Kefir.stream(emitter =>{
+      let size = 0
+
+      // console.log("Trayendo info cancion->"+nombre)
+      // console.log("Tamano->"+tamano)
+      // console.log("Extension->"+extension)
+
+      minioClient.getObject(bucket, nombre, function(err, dataStream) {
+        var buffer = []; 
+        if (err) {
+          return console.log("ERROR-Leyendo archivo"+nombre+" Error:"+err)
+          emitter.end()
+        }
+
+        dataStream.on('data', function(chunk) {
+          buffer.push(chunk)
+          size += chunk.length
+        })
+        dataStream.on('end', function() {
+          //console.log('End. Total size = ' + size)
+          mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: size }).then( metadata => {
+              //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
+
+              let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id)
+              emitter.value(temDatos)
+              emitter.end()
+              dataStream.destroy()
+          });
+        })
+        dataStream.on('error', function(err) {
+          console.log(err)
+          emitter.end()
+        })
+      })
+
     })
-
-    //--- la primera linea incluye una metadata en JSON con la version de la db, la cantidad de lineas que se van a cargar en el indice y con un consecutivo que identifica el orden de creación
-    let firstLine = {version:VERSIONDB, registers:listado.length, id:globalIndexId+1 }
-    inStream.push(JSON.stringify(firstLine)+"\n")
-
-    for (var i = 0, tam = listado.length; i < tam; i++){
-      inStream.push(JSON.stringify(listado[i])+"\n")
-    }
-    inStream.push(null);
-    console.log("Escribiendo Listado a Index. Canciones="+listado.length)
+    return metadatosMinio$
   }
-
 
   //--- copia los metadatos que nos interesan {Descarta la picture:} y otros sobre el tag 
-  function musicCommonMetadata(inData,nombre,fileSize){
+  function musicCommonMetadata(inData,nombre,fileSize,extension,id){
 
-    myObj = {"path":nombre,"filesize":fileSize}
+    myObj = {"id":id,"path":nombre,"filesize":fileSize,"extension":extension}
     properties.forEach( val =>{
       myObj[val] = inData.common[val]
     })
@@ -193,57 +245,74 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
     })
     return myObj
   }
-
-  function buscaDatosMinio(){
-    console.log("buscando datos minio>"+dirList.length) //----para chequear
-    if(dirList.length > 0){
-      let obj = dirList.shift()
-      loadObjectMinio(obj.path,obj.size)
-    }
-  }
-
-
-  //--- Creamos una función que carga una archivo de minio
-  function loadObjectMinio(nombre,tamano){
-    let size = 0
-    console.log("Trayendo info cancion->",nombre)
-    console.log("Tamano->",tamano)
-
+    //--- escribe el listado de las canciones
+    function writeNewIndex(bucket,indexFileName,listado,indexId){
+      const inStream = new Readable({
+        read() {}
+      });
+      
+      minioClient.putObject(bucket, indexFileName, inStream, function(err, etag) {
+        return console.log(err, etag) // err should be null
+      })
   
-    minioClient.getObject(bucket, nombre, function(err, dataStream) {
-      var buffer = []; 
-      if (err) {
-        return console.log("ERROR-Leyendo archivo"+nombre+" Error:"+err)
+      //--- la primera linea incluye una metadata en JSON con la version de la db, la cantidad de lineas que se van a cargar en el indice y con un consecutivo que identifica el orden de creación
+      let firstLine = {version:VERSIONDB, registers:listado.length, id:indexId }
+      inStream.push(JSON.stringify(firstLine)+"\n")
+  
+      for (var i = 0, tam = listado.length; i < tam; i++){
+        inStream.push(JSON.stringify(listado[i])+"\n")
       }
+      inStream.push(null);
+      console.log("Escribiendo Listado a Index. Canciones="+listado.length)
+    }
 
-      dataStream.on('data', function(chunk) {
-        buffer.push(chunk)
-        size += chunk.length
+    function checkDifIndex(dirList,musicIndex,globalIndexId){
+      let dirAddNew = []
+      let indexOkList = []
+      let diferentesAdd = 0
+      let igualesAdd = 0
+      dirList.forEach( (element , ind) => {
+        //console.log(element.path + "="+checkIgual(element.path,musicIndex))
+        if(checkIgual(element.path,musicIndex)){
+        igualesAdd++
+        }
+        else{
+          //-- porque es diferente
+          dirAddNew.push(element)
+          diferentesAdd++
+        }
       })
-      dataStream.on('end', function() {
-        console.log('End. Total size = ' + size)
-        mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: size }).then( metadata => {
-            //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
+      console.log("DIR->IndexDB iquals="+igualesAdd+" changes="+diferentesAdd)
+  
+      let diferentesOk = 0
+      let igualesOk = 0
+      musicIndex.forEach( element => {
+        if(checkIgual(element.path,dirList)){
+          indexOkList.push(element)
+          igualesOk++
+        }
+        else{
+          diferentesOk++
+        }
+      })
+      console.log("IndexDB->dir iquals="+igualesOk+" changes="+diferentesOk)
+      let estado = ""
+      let checkIgualesOk = (igualesOk==musicIndex.length)
 
-            let temDatos = musicCommonMetadata(metadata,nombre,size)
-            listado.push(temDatos)
-            console.log(temDatos)
-            console.log(contAnalisis++ + "/"+contList)
-            //---- sacó ya todos los datos de las canciones
-            if(validList && contList==listado.length){
-              console.log("---FIN DEL ANALISIS DE LAS CANCIONES---"+contList)
-              writeNewIndex()
-            }
-            dataStream.destroy()
-            //-- pide la próxima canción si quedan
-            buscaDatosMinio()
-        });
-      })
-      dataStream.on('error', function(err) {
-        console.log(err)
-      })
-    })
-  }
+      if(checkIgualesOk && diferentesAdd==0) estado="NADA"
+      if(!checkIgualesOk && diferentesAdd==0) estado="SOLOINDEXOK"
+      if(diferentesAdd!=0) estado="ADDINDEX"
+      return {"dir":dirList,"index":musicIndex,"dirNew":dirAddNew,"indexOk":indexOkList,"globalIndexId":globalIndexId,"estado":estado}
+    }
+
+    function checkIgual(nombre,arr){
+      for (var i = 0, tam = arr.length; i < tam; i++) {
+        if (arr[i].path === nombre) {
+            return true;
+        }
+      }
+      return false;
+    }
 
 
   function checkIsSong(nombre){
@@ -258,45 +327,10 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
     return false
   }
 
-
-  //--- vamos a listar desde minio todas las canciones del primer nivel
-  var dirAddNew = []
-  var indexOkList = []
-  var dirList = new Deque() //-- Es el listado de canciones que salen de hacer dir
-  var contList = 0 //-- es el tamano del listado de canciones completo sin vacirase para el analisis.
-  var contAnalisis = 0
-  var validList = false
-  var listado = []  //-- en el vector listado va a quedar toda la metadata de los albunes
-  var musicIndex = []  //-- es el vector que guarda el indice de las canciones
-  var globalIndexId = 0 //-- guarda el valor del indicador del indice actual
-
-  var stream = minioClient.listObjects(bucket,pathMusic, true)
-  stream.on('data', function(obj) {
-      let nombre = obj.name
-      if(nombre!=undefined){
-        let size = obj.size
-        //console.log("Listando:"+nombre)
-        let extension = checkIsSong(nombre)
-        if(size!=undefined && extension){
-          dirList.push({"path":nombre,"size":size})
-          contList++
-        }
-      }
-
-  } )
-
-  stream.on('error', function(err) {
-    console.log(err)
-    console.log("---FIN---")
-  } )
-
-  stream.on('end', function(obj) {
-    console.log("---Listing Files---"+dirList.length)
-    validList = true
-    readIndex()
-  } )
-
-  return "hola"
-
+  function getExtension(nombre){
+    let ext = nombre.substr(nombre.lastIndexOf('.') + 1);
+    ext = ext.toLowerCase()
+    return ext;
+  }
 }
 
