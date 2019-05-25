@@ -1,14 +1,14 @@
-##Reactive programing thoughts
+## Reactive programing thoughts
 
-I think that the best way to learn something is take the risk and face some progressively difficult task and in the way solving the issues that faces. When I created the code for the server, I thought that the code was very messy because the program needs a lot of asynchronous calls like finding metadata from the song.
+I think that the best way to learn something is to take the risk and face some progressively difficult tasks and in the way solving the issues that we find. When I created the code for the server, I thought that the code was very messy because the program needs a lot of asynchronous calls like finding metadata from a song.
 
 I began making the part of the code for detecting files changes in the server and used the Kefir.js library to watch and respond reindexing the Music files. Minio can detect only a event change in one file extension type. So I had to create one monitoring for each file extension. Then I have collected all of this events and use a Pool.plug for each monitored stream. Then I debounce this stream in a way that if there are no changes detected in the monitored files for certain amount of time the process of reindexing will begin. At first this look intuitive and I decided to change all of the program paradigm. This was only a small part.
 
-Taking the Risk
+### Taking the Risk
 
 I was no satisfied with the messy code, so I decided to change the paradigm to functional reactive programing, this could not be a very difficult task. I was wrong.
 
-The idea was to begin small, so I tried the easy and essencial using part of the cose that I hade. The first task was to create a new index.
+The idea was to begin small, so I tried the easy and essencial parts using the code that I had. The first task was to create a new index.
 
 Read the List from the minio server, I had a function that make this task, so the idea is to changed in the way that when I called it returns a Stream with the list. The returned stream is an array with the list of files. I had the first Stream Yea!!!
 
@@ -31,7 +31,7 @@ The code looks easy.
     return finList$
     }
 
-I called in program with this easy code:
+I called with this easy code:
 
     finList$ = readDirectory(bucket,pathMusic);
 
@@ -43,7 +43,7 @@ and to see the answer I use:
 
 So the idea is to create a Stream that returns the Listing of files.  Piece of cake !
 
-I did the same to read the index.
+I did the same to read the index file.
 
 So to decide what to do if create a new empty Music.index file or compare the index I need to have the data of the two Streams.
 I choose to use:
@@ -71,13 +71,13 @@ only with this small code:
 
 This .flatMapConcat make exactly what I need.
 
-At the end I see that my code was data driven in a funcional primitive way (input)->(transform)->(output), but this transformation carry all of the data in the arrows, so the arrows get Thick, because the next transformation need this data to generate the result. Creating all of the classes or structures could be a little heavy for each step in the transformation path.
+At the end I see that my code was data driven in a funcional primitive way **(input)->(transform)->(output)**, but this transformation carry all of the data in the arrows, so the arrows get Thick, because the next transformation need this data to generate the result. Creating all of the classes or structures could be a little heavy for each step in the transformation path.
 
 Conditional in the data flow was a bit messy because going in different paths are not conected in a easy visual way, there are conected in a logical way but usually is not secuencial.
 
 Have a conventional program transformed to (FRP) could in general not to be a good idea, because complexity can grow exponentially
 
-##Lessons learned:
+## Lessons learned:
 
 Changing a whole paradigm in the way of thinking is not easy, it takes time and therefore if the project has limitations for time (as almost always) it is not advisable to change the reactive paradigm.
 
@@ -85,8 +85,8 @@ Many projects can successfully use highly asynchronous parts without having to r
 
 The reactive code is difficult to debug, and it is up to testing and supposing in separate files the behaviors that one wants to use.
 
-It is very important to understand the end of a stream that has a very important role and that helps to minimize the number of data control.
+It is very important to understand the end of a stream that has a very important role and that helps to minimize the number of control data.
 
-We need to understand exactly what we need because most of the tasks that make one thing very good are not good solutions that fit all.
+We need to understand exactly what we need because most of the tasks that make one thing very good are not good solutions that fits all.
 
 

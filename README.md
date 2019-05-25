@@ -94,7 +94,7 @@ Select S3 or Minio with:
 
 To see how to setup a freenas [here](doc/freenas.md)
 
-To see my functional reaactive programing toughts [here](doc/reactive.md)
+To see my functional reactive programing toughts [here](doc/reactive.md)
 
 
 
