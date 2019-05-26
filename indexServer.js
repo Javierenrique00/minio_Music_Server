@@ -1,4 +1,4 @@
-exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient){
+exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA){
 
   var Minio = require('minio')
   const mm = require('music-metadata')
@@ -195,34 +195,40 @@ function readDirectory(bucket,pathMusic){
       // console.log("Trayendo info cancion->"+nombre)
       // console.log("Tamano->"+tamano)
       // console.log("Extension->"+extension)
-
-      minioClient.getObject(bucket, nombre, function(err, dataStream) {
-        var buffer = []; 
-        if (err) {
-          return console.log("ERROR-Leyendo archivo"+nombre+" Error:"+err)
-          emitter.end()
-        }
-
-        dataStream.on('data', function(chunk) {
-          buffer.push(chunk)
-          size += chunk.length
-        })
-        dataStream.on('end', function() {
-          //console.log('End. Total size = ' + size)
-          mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: size }).then( metadata => {
-              //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
-
-              let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id)
-              emitter.value(temDatos)
+      if(SCAN_METADATA){
+          minioClient.getObject(bucket, nombre, function(err, dataStream) {
+            var buffer = []; 
+            if (err) {
+              return console.log("ERROR-Leyendo archivo"+nombre+" Error:"+err)
               emitter.end()
-              dataStream.destroy()
-          });
-        })
-        dataStream.on('error', function(err) {
-          console.log(err)
-          emitter.end()
-        })
-      })
+            }
+
+            dataStream.on('data', function(chunk) {
+              buffer.push(chunk)
+              size += chunk.length
+            })
+            dataStream.on('end', function() {
+              //console.log('End. Total size = ' + size)
+              mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: size }).then( metadata => {
+                  //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
+
+                  let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id)
+                  emitter.value(temDatos)
+                  emitter.end()
+                  dataStream.destroy()
+              });
+            })
+            dataStream.on('error', function(err) {
+              console.log(err)
+              emitter.end()
+            })
+          })
+      }
+      else{
+        emitter.value(musicCommonMetadata({},nombre,size,extension,id))
+        emitter.end()
+      }
+
 
     })
     return metadatosMinio$
@@ -230,19 +236,21 @@ function readDirectory(bucket,pathMusic){
 
   //--- copia los metadatos que nos interesan {Descarta la picture:} y otros sobre el tag 
   function musicCommonMetadata(inData,nombre,fileSize,extension,id){
-
     myObj = {"id":id,"path":nombre,"filesize":fileSize,"extension":extension}
-    properties.forEach( val =>{
-      myObj[val] = inData.common[val]
-    })
-    myObj["track_no"] = inData.common.track.no;
-    myObj["track_of"] = inData.common.track.of;
-    myObj["disk_no"] = inData.common.disk.no;
-    myObj["disk_of"] = inData.common.disk.of;
+    if(SCAN_METADATA){
+        
+        properties.forEach( val =>{
+          myObj[val] = inData.common[val]
+        })
+        myObj["track_no"] = inData.common.track.no;
+        myObj["track_of"] = inData.common.track.of;
+        myObj["disk_no"] = inData.common.disk.no;
+        myObj["disk_of"] = inData.common.disk.of;
 
-    format.forEach( val =>{
-      myObj[val] = inData.format[val]
-    })
+        format.forEach( val =>{
+          myObj[val] = inData.format[val]
+        })
+      }
     return myObj
   }
     //--- escribe el listado de las canciones

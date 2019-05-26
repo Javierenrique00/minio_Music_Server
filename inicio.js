@@ -4,31 +4,33 @@ var Minio = require('minio')
 const miModulo = require("./indexServer")
 const miArrayExtensions = require("./extensiones")
 
-const minio = false  //--- true for minio, false for Amazon S3 or a minio gateway 
+const minio = true  //--- true for minio, false for Amazon S3 or a minio gateway with Google Storage Server or Microsoft azure
+const SCAN_METADATA = true //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
+                           //--- true for read all file and extract metadata information
 
 //--- Configuring Globals USE for minio on Google Cloud with minio gateway
-var bucket = "bogota2"                     //--- name of the bucket
-var pathMusic = "music/"                //--- path to the music library that you want to index
-var indexFileName = "music.index"       //--- leave a music.index (default)
-var minioClient = new Minio.Client({
-    endPoint: '192.168.0.16',            //--- IP of the Minio Music Server where the music library lives
-    port: 9000,                         //--- Port of the Minio server (9000 is default)
-    useSSL: false,                      //--- without SSL, put true for SSL access
-    accessKey: 'XXXXXXXXXXX',                 //---  Minio server Access key
-    secretKey: 'XXXXXXXXXXXXXXXXXXXXXXXX'       //---  Minio server Secret Key
-});
-
-//--- Configuring Globals USE for minio
-// var bucket = "test"                     //--- name of the bucket
+// var bucket = "bogota2"                     //--- name of the bucket
 // var pathMusic = "music/"                //--- path to the music library that you want to index
 // var indexFileName = "music.index"       //--- leave a music.index (default)
 // var minioClient = new Minio.Client({
-//     endPoint: '192.168.0.8',            //--- IP of the Minio Music Server where the music library lives
+//     endPoint: '192.168.0.16',            //--- IP of the Minio Music Server where the music library lives
 //     port: 9000,                         //--- Port of the Minio server (9000 is default)
 //     useSSL: false,                      //--- without SSL, put true for SSL access
-//     accessKey: 'admin',                 //---  Minio server Access key
-//     secretKey: 'password'       //---  Minio server Secret Key
+//     accessKey: 'XXXXXXXXXXX',                 //---  Minio server Access key
+//     secretKey: 'XXXXXXXXXXXXXXXXXXXXXXXX'       //---  Minio server Secret Key
 // });
+
+//--- Configuring Globals USE for minio
+var bucket = "test"                     //--- name of the bucket
+var pathMusic = "music/"                //--- path to the music library that you want to index
+var indexFileName = "music.index"       //--- leave a music.index (default)
+var minioClient = new Minio.Client({
+    endPoint: '192.168.0.8',            //--- IP of the Minio Music Server where the music library lives
+    port: 9000,                         //--- Port of the Minio server (9000 is default)
+    useSSL: false,                      //--- without SSL, put true for SSL access
+    accessKey: 'admin',                 //---  Minio server Access key
+    secretKey: 'password'       //---  Minio server Secret Key
+});
 
 //--- Configuring Globals USE for S3  Comment in case you have Minio
 // var bucket = "mipublico"                     //--- name of the bucket
@@ -44,7 +46,7 @@ var minioClient = new Minio.Client({
 if(!minio){
         //--- se ejecuta cuando es S3
         console.log("--Reindexing--")
-        let exec=miModulo.moduleIndex(bucket,pathMusic,indexFileName,minioClient)
+        let exec=miModulo.moduleIndex(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA)
 }
 else{
         //--- para minio
@@ -78,7 +80,7 @@ else{
         .debounce(20000)
         .onValue( x =>{
                 console.log("--Reindexing--")
-                let exec=miModulo.moduleIndex(bucket,pathMusic,indexFileName,minioClient);
+                let exec=miModulo.moduleIndex(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA);
 
         })
 

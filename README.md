@@ -51,6 +51,8 @@ Check version
 Select S3 or Minio with:
 
     const minio = true  //--- true for Minio, false fo Amazon S3 or a Minio gateway.
+    const SCAN_METADATA = true  //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
+                                //--- true for read all file and extract metadata information
 
 
 //--- Configuring Globals USE for Minio
