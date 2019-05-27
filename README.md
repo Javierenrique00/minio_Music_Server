@@ -3,18 +3,28 @@ Minio music Server is a nodejs program to control a music library with metadata 
 
 Is not a server in the strict sense, because the server is Minio, or the cloud storage that host the music.
 
-The idea is that you have your Music Library copied to a Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Minio Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format.
+The idea is that you have your Music Library copied to a Object Storage Server or Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format.
 
 The program works with Minio as a server and Amazon S3 storage in a direct way, but you can configure Minio Azure Gateway and Minio GCS (google cloud storage) to serve the music files. The difference is that in Minio it detects the changes in the music Library. With S3 and Minio Gateways you run the program each time the library changes to reindex the music library.
 
-In the directories you can find the old version (proceduralVersion) of the program. The program was re engineered to be reactive using only data flows with the help of Kefir.js library.
+The final result of this program is to make the "Music.index" file.
 
-Because I was not acustom to think in a reactive functional form I want to tell that it was hard to find wich is the way to program in this paradigm, and I found that is not easy but the final code result is less messy to understand
+In this repository directories you can find the old version (proceduralVersion) of the program. The program was re engineered to be reactive using only data flows with the help of Kefir.js library.
+
+Because I was not acustom to think in a reactive functional form, I want to tell that it was hard to find wich is the way for FRP - functional reactive programing, and I found that is not easy but the final code result is less messy to understand.
 
 ![Diagram](./doc/images/img1_diagram.jpg "Diagram")
 
 
 I made a Android program called MMEClient, to read the index and download music from your Minio server. (Android program is in developer stage, free version available)
+
+If you have some storage in the cloud that can work with direct links, also is a good place to put the music files and the index file. You can also create by hand the "music.index" file and use the MMEClient Android program to search/download music files. To see a description of the "Music.index" file [here](doc/indexDescription.md)
+
+CLoud Storages that are proven and worked with the MMEClient: Minio, Azure object storage, Google CLoud Storage, Amazon S3, PCloud (Direct Links enabled with Public access ), BackBlaze B2.
+
+So you have plenty of options to storage your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access.
+
+The Pro version of MMEClient can use more than one (1) cloud provider. The Free version only can use one (1) cloud provider with maximum 1000 music files.
 
 ![Icon](./doc/images/opc2_128.jpg "Icon")
 
