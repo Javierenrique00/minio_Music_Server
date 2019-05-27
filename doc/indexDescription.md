@@ -47,6 +47,6 @@ This is an example of the metadata of a music file with the most important field
     "numberOfChannels":2,
     "dataformat":"mp3"}
 
-The most important field is **title:*** because if there is not title, MMEClient uses the last part of the path. In the last example the program it would use **"14.Howard Jones - What Is Love.mp3"** but the real title is only **"What Is Love?"**
-These other fields are auto explained and no further explanation would not be needed.
+The most important field is **title:** because if there is not title, MMEClient uses the last part of the path. In the last example the program it would use **"14.Howard Jones - What Is Love.mp3"** but the real title is only **"What Is Love?"**
+These other fields are auto explained and no further explanation would be given.
 
