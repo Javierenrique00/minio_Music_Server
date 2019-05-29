@@ -33,19 +33,19 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   meta$ = Kefir.zip([finList$.take(1),indexNuevo$.take(1)])  
   .map( x => x[0])
   .flatten()
-  .flatMapConcat(x => loadObjectMinio(x.path,x.size,x.extension,x.id))
+  .flatMapConcurLimit(x => loadObjectMinio(x.path,x.size,x.extension,x.id),2)
+  
 
   meta$.onValue( x =>{
     console.log(x.id)
-
   })
 
   writeNewIndex$ = meta$.bufferWhile()
-  .map( x => writeNewIndex(bucket,indexFileName,x,1) )
+        .map( x => {
+          return writeNewIndex(bucket,indexFileName,x,1)} )
 
   writeNewIndex$.onEnd( () =>{
     console.log("---- Fin creacion de indice")
-
   })
 
   //---- Si ya existe un indice, debe comparar el directorio con el indice para ver las diferencias
@@ -64,9 +64,8 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
 //-------------------------- filtrado a newIndex$
   newMetadata$ = newIndex$.map(x =>x.dirNew) //--
               .flatten()
-              .flatMapConcat( x =>{
-                  return loadObjectMinio(x.path,x.size,x.extension,x.id)
-              }).bufferWhile()
+              .flatMapConcurLimit( x =>loadObjectMinio(x.path,x.size,x.extension,x.id),2)
+              .bufferWhile()
 
   writeChangeIndex$ = Kefir.zip([newMetadata$,diff$])  
   
@@ -75,7 +74,7 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
     let nuevoIndice = x[1].indexOk.concat(x[0])
     writeNewIndex(bucket,indexFileName,nuevoIndice,globalIndexId+1)
   })
-  //-------------------------- filtrado a newIndex$
+  //-------------------------- filtrado a indexOk$
   writeIndexOk$ = indexOk$.map( x => {
     console.log("indexOk=",x.indexOk.length)
     writeNewIndex(bucket,indexFileName,x.indexOk,x.globalIndexId+1)
@@ -102,9 +101,10 @@ function readDirectory(bucket,pathMusic){
         if(nombre!=undefined){
           let size = obj.size
           //console.log("Listando:"+nombre)
-          let extension = checkIsSong(nombre)
+          let extension = checkIsValidExtension(nombre)
           if(size!=undefined && extension){
             myExtension = getExtension(nombre)
+            console.log("Listado:"+cont)
             dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++})
           }
         }
@@ -185,22 +185,19 @@ function readDirectory(bucket,pathMusic){
     return index$
   }
 
-  
+
   //--- Creamos una función que carga una archivo de minio
   function loadObjectMinio(nombre,tamano,extension,id){
-    
-    let metadatosMinio$ = Kefir.stream(emitter =>{
-      let size = 0
-
-      // console.log("Trayendo info cancion->"+nombre)
-      // console.log("Tamano->"+tamano)
-      // console.log("Extension->"+extension)
-      if(SCAN_METADATA){
+    return Kefir.stream(emitter =>{
+      console.log("minio:",id)
+      let validAudioExtension = isValidSongExtension(extension)
+      if(SCAN_METADATA && validAudioExtension){
+          let size = 0
           minioClient.getObject(bucket, nombre, function(err, dataStream) {
-            var buffer = []; 
+            let buffer = []; 
             if (err) {
-              return console.log("ERROR-Leyendo archivo"+nombre+" Error:"+err)
-              emitter.end()
+                console.log("ERROR-Leyendo archivo"+nombre+" Error:"+err)
+                emitter.end()
             }
 
             dataStream.on('data', function(chunk) {
@@ -208,14 +205,14 @@ function readDirectory(bucket,pathMusic){
               size += chunk.length
             })
             dataStream.on('end', function() {
-              //console.log('End. Total size = ' + size)
-              mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: size }).then( metadata => {
+              console.log('End. Total size = ' + size)
+              mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: tamano }).then( metadata => {
                   //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
 
-                  let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id)
+                  let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id,validAudioExtension)
                   emitter.value(temDatos)
                   emitter.end()
-                  dataStream.destroy()
+                  //dataStream.destroy()
               });
             })
             dataStream.on('error', function(err) {
@@ -225,20 +222,25 @@ function readDirectory(bucket,pathMusic){
           })
       }
       else{
-        emitter.value(musicCommonMetadata({},nombre,size,extension,id))
+        emitter.value(musicCommonMetadata({},nombre,tamano,extension,id,validAudioExtension))
         emitter.end()
       }
 
 
     })
-    return metadatosMinio$
+  }
+
+
+  function isValidSongExtension(ext){
+    arreglo = extensionArray.audioExtensiones();
+    return arreglo.includes(ext)
   }
 
   //--- copia los metadatos que nos interesan {Descarta la picture:} y otros sobre el tag 
-  function musicCommonMetadata(inData,nombre,fileSize,extension,id){
+  function musicCommonMetadata(inData,nombre,fileSize,extension,id,validAudioExtension){
     myObj = {"id":id,"path":nombre,"filesize":fileSize,"extension":extension}
-    if(SCAN_METADATA){
-        
+    if(SCAN_METADATA && validAudioExtension){
+        console.log("---metadata--- asigning, id=",id)
         properties.forEach( val =>{
           myObj[val] = inData.common[val]
         })
@@ -250,6 +252,9 @@ function readDirectory(bucket,pathMusic){
         format.forEach( val =>{
           myObj[val] = inData.format[val]
         })
+      }
+      else{
+        console.log("---metadata--- NO ENTER, id=",myObj.id)
       }
     return myObj
   }
@@ -323,16 +328,15 @@ function readDirectory(bucket,pathMusic){
     }
 
 
-  function checkIsSong(nombre){
+  function checkIsValidExtension(nombre){
     let ext = nombre.substr(nombre.lastIndexOf('.') + 1);
     ext = ext.toLowerCase()
-
-    let musicExtensions = extensionArray.arrayExtensiones();
-
-    for (i = 0 ; i < musicExtensions.length ; i++){
-        if(musicExtensions[i]==ext) return true;
-    }
-    return false
+    let musicExtensions = extensionArray.allExtensiones();
+    // for (i = 0 ; i < musicExtensions.length ; i++){
+    //     if(musicExtensions[i]==ext) return true;
+    // }
+    return musicExtensions.includes(ext)
+    //return false
   }
 
   function getExtension(nombre){

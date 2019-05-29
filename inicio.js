@@ -42,7 +42,6 @@ var minioClient = new Minio.Client({
 //     secretKey: 'XXXXXXXXXXXXXXXXXXXXX'   //---  Amazon Secret Key
 // });
 
-
 if(!minio){
         //--- se ejecuta cuando es S3
         console.log("--Reindexing--")
@@ -53,7 +52,7 @@ else{
         //--- Crea el stream minioEvents$ cuando hay eventos de creación y eliminación de objetos
 
         var minioEvents$ = []
-        let extensiones = miArrayExtensions.arrayExtensiones();
+        let extensiones = miArrayExtensions.allExtensiones();
         extensiones.forEach(element => {
 
                 minioEvents$.push( Kefir.stream( emmiter => {
