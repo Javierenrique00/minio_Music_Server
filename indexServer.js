@@ -33,16 +33,19 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   meta$ = Kefir.zip([finList$.take(1),indexNuevo$.take(1)])  
   .map( x => x[0])
   .flatten()
-  .flatMapConcurLimit(x => loadObjectMinio(x.path,x.size,x.extension,x.id),2)
+
+  stream1$ = meta$.filter(x => x.extsong)
+            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+            .bufferWhile()
+
   
+  stream2$ = meta$.filter(x => !(x.extsong))
+            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+            .bufferWhile()
 
-  meta$.onValue( x =>{
-    console.log(x.id)
-  })
 
-  writeNewIndex$ = meta$.bufferWhile()
-        .map( x => {
-          return writeNewIndex(bucket,indexFileName,x,1)} )
+  writeNewIndex$ = Kefir.combine([stream1$,stream2$])
+                  .map( x =>writeNewIndex(bucket,indexFileName,x[0].concat(x[1]),1))
 
   writeNewIndex$.onEnd( () =>{
     console.log("---- Fin creacion de indice")
@@ -64,14 +67,20 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
 //-------------------------- filtrado a newIndex$
   newMetadata$ = newIndex$.map(x =>x.dirNew) //--
               .flatten()
-              .flatMapConcurLimit( x =>loadObjectMinio(x.path,x.size,x.extension,x.id),2)
-              .bufferWhile()
 
-  writeChangeIndex$ = Kefir.zip([newMetadata$,diff$])  
+  searchMetadata$ = newMetadata$.filter(x => x.extsong)
+                    .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+                    .bufferWhile()
+
+  noMetadata$ = newMetadata$.filter(x => !(x.extsong))
+                  .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+                  .bufferWhile()
+
+  writeChangeIndex$ = Kefir.zip([Kefir.combine([searchMetadata$,noMetadata$]),diff$])  
   
   writeChangeIndex$.onValue( x =>{
     let globalIndexId = x[1].globalIndexId
-    let nuevoIndice = x[1].indexOk.concat(x[0])
+    let nuevoIndice = x[1].indexOk.concat(x[0][0].concat(x[0][1]))
     writeNewIndex(bucket,indexFileName,nuevoIndice,globalIndexId+1)
   })
   //-------------------------- filtrado a indexOk$
@@ -105,7 +114,7 @@ function readDirectory(bucket,pathMusic){
           if(size!=undefined && extension){
             myExtension = getExtension(nombre)
             console.log("Listado:"+cont)
-            dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++})
+            dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++,"extsong":isValidSongExtension(myExtension)})
           }
         }
   
@@ -185,12 +194,10 @@ function readDirectory(bucket,pathMusic){
     return index$
   }
 
-
   //--- Creamos una función que carga una archivo de minio
-  function loadObjectMinio(nombre,tamano,extension,id){
+  function loadObjectMinio(nombre,tamano,extension,id,validAudioExtension){
     return Kefir.stream(emitter =>{
       console.log("minio:",id)
-      let validAudioExtension = isValidSongExtension(extension)
       if(SCAN_METADATA && validAudioExtension){
           let size = 0
           minioClient.getObject(bucket, nombre, function(err, dataStream) {
@@ -226,10 +233,8 @@ function readDirectory(bucket,pathMusic){
         emitter.end()
       }
 
-
     })
   }
-
 
   function isValidSongExtension(ext){
     arreglo = extensionArray.audioExtensiones();
