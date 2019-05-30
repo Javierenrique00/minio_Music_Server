@@ -37,15 +37,18 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   stream1$ = meta$.filter(x => x.extsong)
             .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
             .bufferWhile()
-
   
   stream2$ = meta$.filter(x => !(x.extsong))
             .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
             .bufferWhile()
 
-
-  writeNewIndex$ = Kefir.combine([stream1$,stream2$])
-                  .map( x =>writeNewIndex(bucket,indexFileName,x[0].concat(x[1]),1))
+  writeNewIndex$ = Kefir.merge([stream1$,stream2$])
+                  .bufferWhile()
+                  .map( x =>{
+                    if(x[0]!=undefined && x[1]!=undefined) return writeNewIndex(bucket,indexFileName,x[0].concat(x[1]),1)
+                    if(x[0]!=undefined && x[1]==undefined) return writeNewIndex(bucket,indexFileName,x[0],1)
+                    return x
+                  })
 
   writeNewIndex$.onEnd( () =>{
     console.log("---- Fin creacion de indice")
@@ -76,11 +79,18 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
                   .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
                   .bufferWhile()
 
-  writeChangeIndex$ = Kefir.zip([Kefir.combine([searchMetadata$,noMetadata$]),diff$])  
+  une$ = Kefir.merge([searchMetadata$,noMetadata$])
+        .bufferWhile()
+        .map( x => {
+          if(x[0]!=undefined && x[1]!=undefined) return x[0].concat(x[1])
+          if(x[0]!=undefined && x[1]==undefined) return x[0]
+        })
+
+  writeChangeIndex$ = Kefir.zip([une$,diff$])  
   
   writeChangeIndex$.onValue( x =>{
     let globalIndexId = x[1].globalIndexId
-    let nuevoIndice = x[1].indexOk.concat(x[0][0].concat(x[0][1]))
+    let nuevoIndice = x[1].indexOk.concat(x[0])
     writeNewIndex(bucket,indexFileName,nuevoIndice,globalIndexId+1)
   })
   //-------------------------- filtrado a indexOk$
