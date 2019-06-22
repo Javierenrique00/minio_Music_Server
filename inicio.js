@@ -21,7 +21,7 @@ const SCAN_METADATA = true //--- false for only read the basic data from directo
 // });
 
 //--- Configuring Globals USE for minio
-var bucket = "test"                     //--- name of the bucket
+var bucket = "backblaze"                     //--- name of the bucket
 var pathMusic = "music/"                //--- path to the music library that you want to index
 var indexFileName = "music.index"       //--- leave a music.index (default)
 var minioClient = new Minio.Client({

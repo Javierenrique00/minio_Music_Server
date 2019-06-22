@@ -24,7 +24,7 @@ CLoud Storages that are proven and worked with the MMEClient: Minio, Azure objec
 
 So you have plenty of options to storage your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access.
 
-The Pro version of MMEClient can use more than one (1) cloud provider. The Free version only can use one (1) cloud provider with maximum 1000 music files.
+MMEClient can use more than one (1) cloud provider, and has no limit in the number of files.
 
 ![Icon](./doc/images/opc2_128.jpg "Icon")
 
