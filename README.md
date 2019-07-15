@@ -16,15 +16,15 @@ Because I was not acustom to think in a reactive functional form, I want to tell
 ![Diagram](./doc/images/img1_diagram.jpg "Diagram")
 
 
-I made a Android program called MMEClient, to read the index and download music from your Minio server. (Android program is in developer stage, free version available)
+I made an Android program called MMEClient, to read the index and download multimedia data from your Minio server. (Android program is in developer stage, free version available)
 
 If you have some storage in the cloud that can work with direct links you can use Minio Music Server. You can also create by hand the "music.index" file and use the MMEClient Android program to search/download music files. To see a description of the "Music.index" file [here](doc/indexDescription.md)
 
-CLoud Storages that are proven and worked with the MMEClient: Minio, Azure object storage, Google CLoud Storage, Amazon S3, PCloud (Direct Links enabled with Public access ), BackBlaze B2.
+CLoud Storages that are proven and worked with the MMEClient are: Minio, Azure object storage, Google CLoud Storage, Amazon S3, PCloud (Direct Links enabled with Public access ), BackBlaze B2.
 
 So you have plenty of options for storing your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access.
 
-MMEClient can use more than one (1) cloud provider, and has no limit in the number of files and work also with encrypted index file.
+MMEClient can use more than one (1) cloud provider, and has no limit in the number of files, it also works with encrypted index file.
 
 ![Icon](./doc/images/opc2_128.jpg "Icon")
 
@@ -63,6 +63,9 @@ Select S3 or Minio with:
     const minio = true  //--- true for Minio, false fo Amazon S3 or a Minio gateway.
     const SCAN_METADATA = true  //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
                                 //--- true for read all file and extract metadata information
+    const ENCRYPTED = false    //--- True for encrypted index database, False no encryption
+    var PASSWORD = "0123456789012345" //--- Has to be exact 16 characters 
+
 
 
 //--- Configuring Globals USE for Minio
@@ -103,6 +106,8 @@ Select S3 or Minio with:
 8. Make any change to the Music library to see if the music.index file appears in the bucket.
 9. You can delete or put any mp3 file or directory to see the change in the music.index file (this file shows the updates after 30 seconds of inactivity in the minio server)
 ----------------------
+
+To access your Media library use MMEClient for Android, check that your files in the storage has anonymous and public access (Very important for MMEClient)
 
 To see how to setup a freenas [here](doc/freenas.md)
 
