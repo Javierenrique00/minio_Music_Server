@@ -11,7 +11,7 @@
   "dependencies": {
     "collections": "^5.1.8",
     "kefir": "^3.8.6",
-    "minio": "^7.0.5",
+    "minio": "^7.0.10",
     "music-metadata": "^3.5.3"
   }
 }
