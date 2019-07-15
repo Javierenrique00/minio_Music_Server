@@ -3,7 +3,7 @@ Minio music Server is a nodejs program to control a music library with metadata 
 
 Is not a server in the strict sense, because the server is Minio, or the cloud storage that host the music.
 
-The idea is that you have your Music Library copied to a Object Storage Server or Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format, and optionally can be encripted.
+The idea is that you have your Music Library copied to a Object Storage Server or Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format, and optionally can be encrypted.
 
 The program works with Minio as a server and Amazon S3 storage in a direct way, but you can configure Minio Azure Gateway, Minio GCS (google cloud storage) or BackBlaze B2 to serve the music files. The difference is that in Minio it detects the changes in the music Library. With S3 and Minio Gateways you run the program each time the library changes to reindex the music library.
 
