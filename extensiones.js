@@ -3,7 +3,7 @@ audioExtensiones = function(){
 }
 
 videoExtensiones = function(){
-    return ["avi","mpg","vob"]
+    return ["avi","mpg","vob","mkv"]
 }
 
 allExtensiones = function(){

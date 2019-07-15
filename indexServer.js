@@ -1,4 +1,4 @@
-exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA){
+exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA,ENCRYPTED,PASSWORD){
 
   var Minio = require('minio')
   const mm = require('music-metadata')
@@ -8,9 +8,11 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   const { Readable } = require('stream')
   var Kefir = require("kefir")
   const extensionArray = require('./extensiones')
+  var encripcion = require('./encripcion')
 
   //-------------
-  const VERSIONDB = 1
+  var VERSIONDB = 1
+  if(ENCRYPTED) VERSIONDB = 2
   
   const properties = ["title","artist","album","year"]
   const track = ["no","of"]
@@ -185,7 +187,14 @@ function readDirectory(bucket,pathMusic){
 
             }
             else{
-              musicIndex.push( JSON.parse(temp) )
+              if(ENCRYPTED){
+                let parseData = JSON.parse(temp)
+                musicIndex.push( JSON.parse(encripcion.desEncripta(parseData.data,PASSWORD,parseData.iv)))
+              }
+              else{
+                musicIndex.push( JSON.parse(temp) )
+              }
+              
             }
           }
           size += chunk.length
@@ -288,7 +297,12 @@ function readDirectory(bucket,pathMusic){
       inStream.push(JSON.stringify(firstLine)+"\n")
   
       for (var i = 0, tam = listado.length; i < tam; i++){
-        inStream.push(JSON.stringify(listado[i])+"\n")
+        if(ENCRYPTED){
+          inStream.push(JSON.stringify(encripcion.encripta(JSON.stringify(listado[i]),PASSWORD))+"\n")
+        }
+        else{
+          inStream.push(JSON.stringify(listado[i])+"\n")
+        }
       }
       inStream.push(null);
       console.log("Escribiendo Listado a Index. Canciones="+listado.length)
