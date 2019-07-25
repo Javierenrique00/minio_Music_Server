@@ -37,11 +37,11 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   .flatten()
 
   stream1$ = meta$.filter(x => x.extsong)
-            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
             .bufferWhile()
   
   stream2$ = meta$.filter(x => !(x.extsong))
-            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
             .bufferWhile()
 
   writeNewIndex$ = Kefir.merge([stream1$,stream2$])
@@ -74,11 +74,11 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
               .flatten()
 
   searchMetadata$ = newMetadata$.filter(x => x.extsong)
-                    .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+                    .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
                     .bufferWhile()
 
   noMetadata$ = newMetadata$.filter(x => !(x.extsong))
-                  .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong))
+                  .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
                   .bufferWhile()
 
   une$ = Kefir.merge([searchMetadata$,noMetadata$])
@@ -125,8 +125,11 @@ function readDirectory(bucket,pathMusic){
           let extension = checkIsValidExtension(nombre)
           if(size!=undefined && extension){
             myExtension = getExtension(nombre)
+            //--- creando el iv
+            let iv = encripcion.genIV()
+            let nameEnc = pathMusic + encripcion.encriptaHEX(nombre,iv,PASSWORD) + ".encrypt"
             console.log("Listado:"+cont)
-            dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++,"extsong":isValidSongExtension(myExtension)})
+            dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++,"extsong":isValidSongExtension(myExtension),"iv":iv,"nameEnc":nameEnc})
           }
         }
   
@@ -214,7 +217,7 @@ function readDirectory(bucket,pathMusic){
   }
 
   //--- Creamos una función que carga una archivo de minio
-  function loadObjectMinio(nombre,tamano,extension,id,validAudioExtension){
+  function loadObjectMinio(nombre,tamano,extension,id,validAudioExtension,iv,nameEnc){
     return Kefir.stream(emitter =>{
       console.log("minio:",id)
       if(SCAN_METADATA && validAudioExtension){
@@ -232,14 +235,25 @@ function readDirectory(bucket,pathMusic){
             })
             dataStream.on('end', function() {
               console.log('End. Total size = ' + size)
-              mm.parseBuffer(Buffer.concat(buffer), 'audio/mpeg', { fileSize: tamano }).then( metadata => {
+              let todoBuffer = Buffer.concat(buffer)
+              mm.parseBuffer(todoBuffer, 'audio/mpeg', { fileSize: tamano }).then( metadata => {
                   //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
 
-                  let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id,validAudioExtension)
+                  let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id,validAudioExtension,iv,nameEnc)
                   emitter.value(temDatos)
-                  emitter.end()
-                  //dataStream.destroy()
+
+                  //--- escribe el archivo encriptado
+                  let toEncript = encripcion.encriptaBinary(todoBuffer,iv,PASSWORD)
+                  minioClient.putObject(bucket,nameEnc,toEncript,function(err,etag){
+                    
+                    emitter.end()
+                    return console.log(err, etag)
+                  })
+
+                  //emitter.end()
+
               });
+
             })
             dataStream.on('error', function(err) {
               console.log(err)
@@ -248,7 +262,7 @@ function readDirectory(bucket,pathMusic){
           })
       }
       else{
-        emitter.value(musicCommonMetadata({},nombre,tamano,extension,id,validAudioExtension))
+        emitter.value(musicCommonMetadata({},nombre,tamano,extension,id,validAudioExtension,iv,nameEnc))
         emitter.end()
       }
 
@@ -261,8 +275,8 @@ function readDirectory(bucket,pathMusic){
   }
 
   //--- copia los metadatos que nos interesan {Descarta la picture:} y otros sobre el tag 
-  function musicCommonMetadata(inData,nombre,fileSize,extension,id,validAudioExtension){
-    myObj = {"id":id,"path":nombre,"filesize":fileSize,"extension":extension}
+  function musicCommonMetadata(inData,nombre,fileSize,extension,id,validAudioExtension,iv,nameEnc){
+    myObj = {"id":id,"path":nombre,"filesize":fileSize,"extension":extension,"iv":iv,"nameEnc":nameEnc}
     if(SCAN_METADATA && validAudioExtension){
         console.log("---metadata--- asigning, id=",id)
         properties.forEach( val =>{
@@ -298,7 +312,7 @@ function readDirectory(bucket,pathMusic){
   
       for (var i = 0, tam = listado.length; i < tam; i++){
         if(ENCRYPTED){
-          inStream.push(JSON.stringify(encripcion.encripta(JSON.stringify(listado[i]),PASSWORD))+"\n")
+          inStream.push(JSON.stringify(encripcion.encripta(JSON.stringify(listado[i]),listado[i].iv,PASSWORD))+"\n")
         }
         else{
           inStream.push(JSON.stringify(listado[i])+"\n")
@@ -329,13 +343,14 @@ function readDirectory(bucket,pathMusic){
       let diferentesOk = 0
       let igualesOk = 0
       musicIndex.forEach( element => {
-        if(checkIgual(element.path,dirList)){
+        if(checkIgual(element.path,dirList) || checkIgual(element.nameEnc,dirList)){
           indexOkList.push(element)
           igualesOk++
         }
         else{
           diferentesOk++
         }
+
       })
       console.log("IndexDB->dir iquals="+igualesOk+" changes="+diferentesOk)
       let estado = ""
@@ -349,8 +364,12 @@ function readDirectory(bucket,pathMusic){
 
     function checkIgual(nombre,arr){
       for (var i = 0, tam = arr.length; i < tam; i++) {
+        //console.log("Check str1="+nombre+" str2="+arr[i].path + " str3="+arr[i].nameEnc)
         if (arr[i].path === nombre) {
             return true;
+        }
+        if (arr[i].nameEnc === nombre) {
+          return true;
         }
       }
       return false;

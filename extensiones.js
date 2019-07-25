@@ -6,9 +6,12 @@ videoExtensiones = function(){
     return ["avi","mpg","vob","mkv"]
 }
 
+encriptionExtensiones = function(){
+    return ["encrypt"]
+}
+
 allExtensiones = function(){
-    return audioExtensiones().concat(videoExtensiones())
-    
+    return (audioExtensiones().concat(videoExtensiones())).concat(encriptionExtensiones())
 }
 
 exports.audioExtensiones = function(){
@@ -17,6 +20,10 @@ exports.audioExtensiones = function(){
 
 exports.videoExtensiones = function(){
     return videoExtensiones()
+}
+
+exports.encriptionExtensiones = function(){
+    return encriptionExtensiones()
 }
 
 exports.allExtensiones = function(){

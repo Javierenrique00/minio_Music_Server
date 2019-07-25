@@ -6,11 +6,13 @@ const miArrayExtensions = require("./extensiones")
 const encripcion = require("./encripcion")
 
 //------------- CONFIGURATION 
-const DEBOUNCEDELAY = 120000 //--- 120 seconds for reindexing if are changes in de files
-const minio = true  //--- true for minio, false for Amazon S3 or a minio gateway with Google Storage Server or Microsoft azure
+
+const DEBOUNCEDELAY = 20000 //--- 120 seconds for reindexing if are changes in de files
+const minio = false  //--- true for minio, false for Amazon S3 or a minio gateway with Google Storage Server or Microsoft azure
 const SCAN_METADATA = true //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
                            //--- true for read all file and extract metadata information
-const ENCRYPTED = false    //--- True for encrypted index database, False no encryption
+const ENCRYPTED = true    //--- True for encrypted index database, False no encryption
+                          //--- if ENCRYPTED is true SCAN_METADATA has to be put in TRUE
 var PASSWORD = "0123456789012345" //--- Has to be exact 16 characters
 
 //--- Configuring Globals USE for minio on Google Cloud with minio gateway
@@ -26,7 +28,7 @@ var PASSWORD = "0123456789012345" //--- Has to be exact 16 characters
 // });
 
 //--- Configuring Globals USE for minio  Confioguraciona para acceso a Minio server local
-var bucket = "test"                     //--- name of the bucket
+var bucket = "cri"                     //--- name of the bucket
 var pathMusic = "music/"                //--- path to the music library that you want to index
 //var indexFileName = "music.index"       //--- leave a music.index (default)
 var indexFileName = "crypt.index"         //--- el nombre del indice encriptado
@@ -62,6 +64,7 @@ var minioClient = new Minio.Client({
 
 //--- el password debe ser de 16 caracteres de longitud
 PASSWORD =  encripcion.checkPassword(PASSWORD)
+if(ENCRYPTED) SCAN_METADATA = true //-- force SCAN_METADATA if encrypted
 if(!minio){
         //--- se ejecuta cuando es S3
         console.log("--Reindexing--")

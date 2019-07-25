@@ -1,13 +1,39 @@
-exports.encripta = function(data,password){
+exports.encripta = function(data,ivParam,password){
 
+    let iv = new Buffer(ivParam,'base64')
     let crypto = require('crypto')
-    let iv = new Buffer(crypto.randomBytes(16))
-
     let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
     let  myStr = myKey.update(data,'utf8','base64')
     myStr += myKey.final('base64')
     return {data: myStr,iv:iv.toString('base64')}
 }
+
+exports.encriptaBinary = function(data,ivParam,password){
+    let iv = new Buffer(ivParam,'base64')
+    let crypto = require('crypto')
+    let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
+    let  myStr = myKey.update(data,'binary','binary')
+    myStr += myKey.final('binary')
+    return myStr
+}
+
+exports.encriptaHEX = function(data,ivParam,password){
+
+    let iv = new Buffer(ivParam,'base64')
+    let crypto = require('crypto')
+    let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
+    let  myStr = myKey.update(data,'utf8','hex')
+    myStr += myKey.final('hex')
+    return myStr.toString('hex')
+}
+
+
+exports.genIV = function(){
+    let crypto = require('crypto')
+    let iv = new Buffer(crypto.randomBytes(16))
+    return iv.toString('base64')
+}
+
 
 exports.desEncripta = function(data,password,ivParam){
 

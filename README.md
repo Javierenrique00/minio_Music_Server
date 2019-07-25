@@ -3,11 +3,11 @@ Minio music Server is a nodejs program to control a music library with metadata 
 
 Is not a server in the strict sense, because the server is Minio, or the cloud storage that host the music.
 
-The idea is that you have your Music Library copied to a Object Storage Server or Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Music Server program indexed all metadata from your music library when it detects a change in the library. The index is in a NDJSON format, and optionally can be encrypted.
+The idea is that you have your Music Library copied to a Object Storage Server or Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Music Server program indexed all metadata from your music library when it detects a change in the library.
 
 The program works with Minio as a server and Amazon S3 storage in a direct way, but you can configure Minio Azure Gateway, Minio GCS (google cloud storage) or BackBlaze B2 to serve the music files. The difference is that in Minio it detects the changes in the music Library. With S3 and Minio Gateways you run the program each time the library changes to reindex the music library.
 
-The final result of this program is to make the "Music.index" file.
+The final result of this program is to make the index file. example: "music.index".  Optionally, you can choose encryption, and all of the multimedia files and index file get encrypted. 
 
 In this repository directories you can find the old version (procedural Version and obsolete version) of the program. The program was re engineered to be reactive using only data flows with the help of Kefir.js library.
 
@@ -22,9 +22,9 @@ If you have some storage in the cloud that can work with direct links you can us
 
 CLoud Storages that are proven and worked with the MMEClient are: Minio, Azure object storage, Google CLoud Storage, Amazon S3, PCloud (Direct Links enabled with Public access ), BackBlaze B2.
 
-So you have plenty of options for storing your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access.
+So you have plenty of options for storing your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access. Encrypted files are very useful when you use a public cloud and public access, so you don't expose your files. These files are public but the only way to know what is inside is decrypting them with your own key.
 
-MMEClient can use more than one (1) cloud provider, and has no limit in the number of files, it also works with encrypted index file.
+MMEClient can use more than one (1) cloud provider, and has no limit in the number of files, it also works with encrypted files.
 
 ![Icon](./doc/images/opc2_128.jpg "Icon")
 
