@@ -12,10 +12,27 @@ exports.encriptaBinary = function(data,ivParam,password){
     let iv = new Buffer(ivParam,'base64')
     let crypto = require('crypto')
     let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
-    let  myStr = myKey.update(data,'binary','binary')
-    myStr += myKey.final('binary')
-    return myStr
+    let  myStr = myKey.update(data.toString('hex'),"hex","hex")
+    myStr += myKey.final("hex")
+    return Buffer.from(myStr,"hex")
 }
+
+exports.desEncriptaBinary = function(data,ivParam,password){
+    let iv = new Buffer(ivParam,'base64')
+    let crypto = require('crypto')
+    let myKey = crypto.createDecipheriv('aes-128-cbc',password,iv)
+    let  myStr = myKey.update(data.toString('hex'),"hex","hex")
+    try {
+        myStr += myKey.final("hex")
+    }
+    catch(ex){
+        console.log("Error desencriptanto ---")
+    }
+    return Buffer.from(myStr,"hex")
+
+}
+
+
 
 exports.encriptaHEX = function(data,ivParam,password){
 
@@ -27,6 +44,10 @@ exports.encriptaHEX = function(data,ivParam,password){
     return myStr.toString('hex')
 }
 
+exports.md5 = function(data){
+    let crypto = require('crypto')
+    return crypto.createHash('md5').update(data).digest("hex");
+}
 
 exports.genIV = function(){
     let crypto = require('crypto')

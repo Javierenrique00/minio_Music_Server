@@ -127,7 +127,7 @@ function readDirectory(bucket,pathMusic){
             myExtension = getExtension(nombre)
             //--- creando el iv
             let iv = encripcion.genIV()
-            let nameEnc = pathMusic + encripcion.encriptaHEX(nombre,iv,PASSWORD) + ".encrypt"
+            let nameEnc = pathMusic + encripcion.md5(nombre) + ".encrypt"
             console.log("Listado:"+cont)
             dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++,"extsong":isValidSongExtension(myExtension),"iv":iv,"nameEnc":nameEnc})
           }
@@ -232,25 +232,37 @@ function readDirectory(bucket,pathMusic){
             dataStream.on('data', function(chunk) {
               buffer.push(chunk)
               size += chunk.length
+
+              
+
             })
             dataStream.on('end', function() {
               console.log('End. Total size = ' + size)
               let todoBuffer = Buffer.concat(buffer)
+              
+              if(ENCRYPTED){
+                let outEncript = parte1008Encript(todoBuffer,iv,PASSWORD)
+                //--- escribe el archivo encriptado el cual está segmentado en segmentos de 1024
+                minioClient.putObject(bucket,nameEnc,Buffer.concat(outEncript),function(err,etag){
+                  emitter.end()
+                  return console.log(err, etag)
+                })
+              }
+
               mm.parseBuffer(todoBuffer, 'audio/mpeg', { fileSize: tamano }).then( metadata => {
                   //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
 
                   let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id,validAudioExtension,iv,nameEnc)
                   emitter.value(temDatos)
 
-                  //--- escribe el archivo encriptado
-                  let toEncript = encripcion.encriptaBinary(todoBuffer,iv,PASSWORD)
-                  minioClient.putObject(bucket,nameEnc,toEncript,function(err,etag){
-                    
-                    emitter.end()
-                    return console.log(err, etag)
-                  })
-
-                  //emitter.end()
+                  // //--- prueba la desencripcion
+                  // let fileEncripted = Buffer.concat(outEncript)
+                  // let fileUnEncripted = parte1024DesEncript(fileEncripted,iv,PASSWORD)
+                  // //--- parte en segmentos de 1024
+                  // minioClient.putObject(bucket,nameEnc+".rec",Buffer.concat(fileUnEncripted),function(err,etag){
+                  //   emitter.end()
+                  //   return console.log(err, etag)
+                  // })
 
               });
 
@@ -268,6 +280,48 @@ function readDirectory(bucket,pathMusic){
 
     })
   }
+
+  //--- lo parte en segmentos de 1008 para que encriptado quede de 1024
+  function parte1008Encript(arreglo,iv,PASSWORD){
+    let loc = 0
+    let tamMax = arreglo.length
+    let outEncript = []
+    let delta = 0
+    while(loc<tamMax){
+      if(loc+1008<tamMax){
+        delta = 1008
+      }
+      else{
+        delta = tamMax - loc
+      }
+      let chunk1008 = encripcion.encriptaBinary(arreglo.slice(loc,loc+delta),iv,PASSWORD)
+      outEncript.push(chunk1008)
+      // let comTam = chunk1008.length
+      // if(comTam!=1024) console.log("Diferente de 1024 tam="+chunk1008.length)
+      loc += delta
+    } 
+    return outEncript
+  }
+
+  function parte1024DesEncript(arreglo,iv,PASSWORD){
+    let loc = 0
+    let tamMax = arreglo.length
+    let outEncript = []
+    let delta = 0
+    while(loc<tamMax){
+      if(loc+1024<tamMax){
+        delta = 1024
+      }
+      else{
+        delta = tamMax - loc
+      }
+      let chunk1024 = encripcion.desEncriptaBinary(arreglo.slice(loc,loc+delta),iv,PASSWORD)
+      outEncript.push(chunk1024)
+      loc += delta
+    } 
+    return outEncript
+  }
+
 
   function isValidSongExtension(ext){
     arreglo = extensionArray.audioExtensiones();

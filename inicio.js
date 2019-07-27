@@ -7,13 +7,13 @@ const encripcion = require("./encripcion")
 
 //------------- CONFIGURATION 
 
-const DEBOUNCEDELAY = 20000 //--- 120 seconds for reindexing if are changes in de files
+const DEBOUNCEDELAY = 120000 //--- 120 seconds for reindexing if are changes in de files
 const minio = false  //--- true for minio, false for Amazon S3 or a minio gateway with Google Storage Server or Microsoft azure
-const SCAN_METADATA = true //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
+var SCAN_METADATA = true //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
                            //--- true for read all file and extract metadata information
 const ENCRYPTED = true    //--- True for encrypted index database, False no encryption
                           //--- if ENCRYPTED is true SCAN_METADATA has to be put in TRUE
-var PASSWORD = "0123456789012345" //--- Has to be exact 16 characters
+var PASSWORD = "0123456789012345" //--- Has to be exact 16 characters you can change to any string
 
 //--- Configuring Globals USE for minio on Google Cloud with minio gateway
 // var bucket = "bogota2"                     //--- name of the bucket
@@ -64,7 +64,7 @@ var minioClient = new Minio.Client({
 
 //--- el password debe ser de 16 caracteres de longitud
 PASSWORD =  encripcion.checkPassword(PASSWORD)
-if(ENCRYPTED) SCAN_METADATA = true //-- force SCAN_METADATA if encrypted
+if(ENCRYPTED) SCAN_METADATA = true //-- force SCAN_METADATA if encrypted todo
 if(!minio){
         //--- se ejecuta cuando es S3
         console.log("--Reindexing--")
