@@ -1,4 +1,4 @@
-exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA,ENCRYPTED,PASSWORD){
+exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_METADATA,ENCRYPTED,PASSWORD,keyFileName){
 
   var Minio = require('minio')
   const mm = require('music-metadata')
@@ -24,24 +24,31 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   var finList$ // es el stream que se activa cuando se ha terminado el listado
   var index$ // es el Stream con el listado
 
+  var readKey$ = readKeyFile(bucket,keyFileName,PASSWORD) //-- es el stream de la llave encriptada
 
-  finList$ = readDirectory(bucket,pathMusic);  //--- es es stream del listado
-  index$ =readIndex(bucket,indexFileName);     //--- es el stream del indice (music.index)
+  finList$ = readDirectory(bucket,pathMusic);  //--- es es stream del listado 
+  index$ = readKey$.flatMap( x => readIndex(bucket,indexFileName,x.data,x.iv))  //--- es el stream del indice (music.index)
+
 
   indexCompleto$ = index$.filter(x => x["flag"]=="EXISTENTE") //-- tiene indice
   indexNuevo$ = index$.filter(x => x["flag"]=="NUEVO")        //-- no tiene indice y por tanto debe escribir uno nuevo
   
   //--- crea todo un indice nuevo
-  meta$ = Kefir.zip([finList$.take(1),indexNuevo$.take(1)])  
-  .map( x => x[0])
-  .flatten()
 
-  stream1$ = meta$.filter(x => x.extsong)
-            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
-            .bufferWhile()
+  meta$ = Kefir.combine([finList$.take(1),indexNuevo$.take(1)])
+        .map( x =>{
+        let param1=x[0]
+        let param2=x[1]
+        return recorreList(param1,param2)
+        })
+        .flatten()
+   
+  stream1$ = meta$.filter(x => x.dir.extsong)
+              .flatMapConcat( x =>loadObjectMinio(x.dir.path,x.dir.size,x.dir.extension,x.dir.id,x.dir.extsong,x.dir.iv,x.dir.nameEnc,x.index.key))
+              .bufferWhile()
   
-  stream2$ = meta$.filter(x => !(x.extsong))
-            .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
+  stream2$ = meta$.filter(x => !(x.dir.extsong))
+            .flatMapConcat( x =>loadObjectMinio(x.dir.path,x.dir.size,x.dir.extension,x.dir.id,x.dir.extsong,x.dir.iv,x.dir.nameEnc,x.index.key))
             .bufferWhile()
 
   writeNewIndex$ = Kefir.merge([stream1$,stream2$])
@@ -53,7 +60,7 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
                   })
 
   writeNewIndex$.onEnd( () =>{
-    console.log("---- Fin creacion de indice")
+    //console.log("---- Fin creacion de indice")
   })
 
   //---- Si ya existe un indice, debe comparar el directorio con el indice para ver las diferencias
@@ -62,7 +69,8 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
             let dir = x[0] //-- el directorio
             let index = x[1].data  //-- el indice
             let globalIndexId = x[1].globalIndexId // el id del indice leido
-            return checkDifIndex(dir,index,globalIndexId)
+            let key = x[1].key
+            return checkDifIndex(dir,index,globalIndexId,key)
           })
   
   newIndex$ = diff$.filter(x => x.estado=="ADDINDEX")
@@ -70,15 +78,23 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   nada$ = diff$.filter(x => x.estado=="NADA")
 
 //-------------------------- filtrado a newIndex$
-  newMetadata$ = newIndex$.map(x =>x.dirNew) //--
-              .flatten()
+  // newMetadata$ = newIndex$.map(x =>x.dirNew)
+  //             .flatten()
 
-  searchMetadata$ = newMetadata$.filter(x => x.extsong)
-                    .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
+  newMetadata$ = newIndex$.map( x =>{
+    let param1 = x.dirNew
+    let param2 = x.key
+    //console.log("KKKKK="+JSON.stringify(x.dirNew))
+    return recorreList(param1,param2)
+  })
+  .flatten()
+
+  searchMetadata$ = newMetadata$.filter(x => x.dir.extsong)
+                    .flatMapConcat( x =>loadObjectMinio(x.dir.path,x.dir.size,x.dir.extension,x.dir.id,x.dir.extsong,x.dir.iv,x.dir.nameEnc,x.index))
                     .bufferWhile()
 
-  noMetadata$ = newMetadata$.filter(x => !(x.extsong))
-                  .flatMapConcat( x =>loadObjectMinio(x.path,x.size,x.extension,x.id,x.extsong,x.iv,x.nameEnc))
+  noMetadata$ = newMetadata$.filter(x => !(x.dir.extsong))
+                  .flatMapConcat( x =>loadObjectMinio(x.dir.path,x.dir.size,x.dir.extension,x.dir.id,x.dir.extsong,x.dir.iv,x.dir.nameEnc,x.index))
                   .bufferWhile()
 
   une$ = Kefir.merge([searchMetadata$,noMetadata$])
@@ -91,8 +107,13 @@ exports.moduleIndex = function(bucket,pathMusic,indexFileName,minioClient,SCAN_M
   writeChangeIndex$ = Kefir.zip([une$,diff$])  
   
   writeChangeIndex$.onValue( x =>{
+    //console.log("----------------------------------- antes de escribir el indice")
     let globalIndexId = x[1].globalIndexId
     let nuevoIndice = x[1].indexOk.concat(x[0])
+    nuevoIndice.forEach(it =>{
+      //console.log("-"+JSON.stringify(it))
+    })
+
     writeNewIndex(bucket,indexFileName,nuevoIndice,globalIndexId+1)
   })
   //-------------------------- filtrado a indexOk$
@@ -128,7 +149,7 @@ function readDirectory(bucket,pathMusic){
             //--- creando el iv
             let iv = encripcion.genIV()
             let nameEnc = pathMusic + encripcion.md5(nombre) + ".encrypt"
-            console.log("Listado:"+cont)
+            //console.log("Listado:"+cont)
             dirList.push({"path":nombre,"size":size,"extension":myExtension,"id":cont++,"extsong":isValidSongExtension(myExtension),"iv":iv,"nameEnc":nameEnc})
           }
         }
@@ -148,11 +169,73 @@ function readDirectory(bucket,pathMusic){
   return finList$
 }
 
+  //---Revisa si se ha generado el archivo de encripcion
+  function readKeyFile(bucket,keyFileName,PASSWORD){
+    return Kefir.stream(emitter => {
+
+      let file = []
+      minioClient.getObject(bucket,keyFileName, function(err,dataStream){
+        console.log("Looking for Key file...")
+        if(err){
+          console.log("---NO KEY FOUND ----")
+          console.log("- Creating KEY")
+          let keyFile = creatingKeyFile(bucket,keyFileName,PASSWORD)
+          emitter.value(keyFile)
+          emitter.end()
+          return
+        }
+        dataStream.on('data',function(chunk){
+          file.push(chunk)
+        })
+        dataStream.on('end', function() {
+          let data = Buffer.concat(file)
+
+          //--desencripta el archivo recien leido
+          //console.log("DESENCRIPCION:"+JSON.stringify(JSON.parse(data)))
+          let lectura = JSON.parse(data)
+          let key = encripcion.desEncripta(lectura.data,PASSWORD,lectura.iv)
+          //console.log("Desencripcion key:"+key)
+          emitter.value({data:key,iv:lectura.iv})
+          emitter.end()
+        })
+        dataStream.on('error', function(err) {
+          console.log(err)
+          emitter.end()
+        })
+  
+      })
+    })
+  }
+
+  function creatingKeyFile(bucket,keyFileName,PASSWORD){
+    let key = encripcion.genRandomKey() //--String base 64
+    let iv = encripcion.genIV() //---base64
+    let myEncriptedKeyIV = encripcion.encripta(key,iv,PASSWORD)
+    const inStream = new Readable({
+      read() {}
+    })
+    minioClient.putObject(bucket, keyFileName, inStream, function(err, etag) {
+      return console.log(err, etag) // err should be null
+    })
+    inStream.push(JSON.stringify(myEncriptedKeyIV))
+    inStream.push(null)
+    return {data:key,iv:iv}
+  }
+
+  function recorreList(lista,indexResult){
+    let salida = []
+      lista.forEach( it =>{
+        salida.push({dir:it,index:indexResult})
+      })
+      return salida
+  }
+
   //--- Lista el indice de canciones actual
-  function readIndex(bucket,indexFileName){
+  function readIndex(bucket,indexFileName,key,iv){
+    //console.log("read index key:"+key)
       let index$ = Kefir.stream(emitter =>{
-      let size = 0
       let musicIndex = []
+      let size = 0
       let globalIndexId
       var tempChunk = ""
       minioClient.getObject(bucket, indexFileName, function(err, dataStream) {
@@ -160,12 +243,12 @@ function readDirectory(bucket,pathMusic){
         let firstLine = true
         if (err) {
           console.log("NUEVO")
-          emitter.value({"flag":"NUEVO"})
+          emitter.value({"flag":"NUEVO","key":key,"iv":iv})
           emitter.end()
           return index$
         }
         dataStream.on('data', function(chunk) {
-          //console.log("Reading Chunk")
+          //console.log("------------------------------------------------------Reading Chunk")
         
           let chunkStr = chunk.toString()
           let divChunk = chunkStr.split("\n")
@@ -174,7 +257,7 @@ function readDirectory(bucket,pathMusic){
           //console.log("***"+tempChunk)
           for (var i = 0, tam = divChunk.length-1; i < tam; i++){
             let temp = divChunk[i]
-            
+            //console.log("index("+i+")=")
             if(firstLine){
                           //globalIndexId ojo definición de consecutivo porque ya existe.
             let data= JSON.parse(temp)
@@ -192,7 +275,8 @@ function readDirectory(bucket,pathMusic){
             else{
               if(ENCRYPTED){
                 let parseData = JSON.parse(temp)
-                musicIndex.push( JSON.parse(encripcion.desEncripta(parseData.data,PASSWORD,parseData.iv)))
+                let desEnc = encripcion.desEncripta(parseData.data,Buffer.from(key,"base64"),parseData.iv)
+                musicIndex.push( JSON.parse(desEnc))
               }
               else{
                 musicIndex.push( JSON.parse(temp) )
@@ -204,7 +288,7 @@ function readDirectory(bucket,pathMusic){
         })
         dataStream.on('end', function() {
 
-          emitter.value({"flag":"EXISTENTE","data":musicIndex,"globalIndexId":globalIndexId})
+          emitter.value({"flag":"EXISTENTE","data":musicIndex,"globalIndexId":globalIndexId,"key":key,"iv":iv})
           emitter.end()
         })
         dataStream.on('error', function(err) {
@@ -217,10 +301,15 @@ function readDirectory(bucket,pathMusic){
   }
 
   //--- Creamos una función que carga una archivo de minio
-  function loadObjectMinio(nombre,tamano,extension,id,validAudioExtension,iv,nameEnc){
+  function loadObjectMinio(nombre,tamano,extension,id,validAudioExtension,iv,nameEnc,key){
     return Kefir.stream(emitter =>{
       console.log("minio:",id)
-      if(SCAN_METADATA && validAudioExtension){
+      // console.log("minio nombre:",nombre)
+      // console.log("minio key:",key)
+      // console.log("minio iv:",iv)
+      // console.log("minio extension:",extension)
+
+      if(SCAN_METADATA && validAudioExtension || ENCRYPTED){
           let size = 0
           minioClient.getObject(bucket, nombre, function(err, dataStream) {
             let buffer = []; 
@@ -233,15 +322,15 @@ function readDirectory(bucket,pathMusic){
               buffer.push(chunk)
               size += chunk.length
 
-              
-
             })
             dataStream.on('end', function() {
               console.log('End. Total size = ' + size)
               let todoBuffer = Buffer.concat(buffer)
+
               
+
               if(ENCRYPTED){
-                let outEncript = parte1008Encript(todoBuffer,iv,PASSWORD)
+                let outEncript = parte1008Encript(todoBuffer,iv,key)
                 //--- escribe el archivo encriptado el cual está segmentado en segmentos de 1024
                 minioClient.putObject(bucket,nameEnc,Buffer.concat(outEncript),function(err,etag){
                   emitter.end()
@@ -253,8 +342,8 @@ function readDirectory(bucket,pathMusic){
                   //console.log(util.inspect(metadata, { showHidden: false, depth: null }));
 
                   let temDatos = musicCommonMetadata(metadata,nombre,size,extension,id,validAudioExtension,iv,nameEnc)
-                  emitter.value(temDatos)
-
+                  emitter.value({data: temDatos,key:key})
+                  if(!ENCRYPTED) emitter.end()
                   // //--- prueba la desencripcion
                   // let fileEncripted = Buffer.concat(outEncript)
                   // let fileUnEncripted = parte1024DesEncript(fileEncripted,iv,PASSWORD)
@@ -274,7 +363,9 @@ function readDirectory(bucket,pathMusic){
           })
       }
       else{
-        emitter.value(musicCommonMetadata({},nombre,tamano,extension,id,validAudioExtension,iv,nameEnc))
+        console.log("-------------------- entrando a solo info básica no metadata")
+        let temDatos = musicCommonMetadata({},nombre,tamano,extension,id,validAudioExtension,iv,nameEnc)
+        emitter.value({data:temDatos,key:key})
         emitter.end()
       }
 
@@ -282,7 +373,9 @@ function readDirectory(bucket,pathMusic){
   }
 
   //--- lo parte en segmentos de 1008 para que encriptado quede de 1024
-  function parte1008Encript(arreglo,iv,PASSWORD){
+  function parte1008Encript(arreglo,iv,key){
+    //console.log("llave:"+key)
+    let llave = Buffer.from(key,'base64')
     let loc = 0
     let tamMax = arreglo.length
     let outEncript = []
@@ -294,7 +387,7 @@ function readDirectory(bucket,pathMusic){
       else{
         delta = tamMax - loc
       }
-      let chunk1008 = encripcion.encriptaBinary(arreglo.slice(loc,loc+delta),iv,PASSWORD)
+      let chunk1008 = encripcion.encriptaBinary(arreglo.slice(loc,loc+delta),iv,llave)
       outEncript.push(chunk1008)
       // let comTam = chunk1008.length
       // if(comTam!=1024) console.log("Diferente de 1024 tam="+chunk1008.length)
@@ -351,7 +444,7 @@ function readDirectory(bucket,pathMusic){
     return myObj
   }
     //--- escribe el listado de las canciones
-    function writeNewIndex(bucket,indexFileName,listado,indexId){
+  function writeNewIndex(bucket,indexFileName,listado,indexId){
       const inStream = new Readable({
         read() {}
       });
@@ -363,42 +456,50 @@ function readDirectory(bucket,pathMusic){
       //--- la primera linea incluye una metadata en JSON con la version de la db, la cantidad de lineas que se van a cargar en el indice y con un consecutivo que identifica el orden de creación
       let firstLine = {version:VERSIONDB, registers:listado.length, id:indexId }
       inStream.push(JSON.stringify(firstLine)+"\n")
-  
+      console.log("Writing Index. files="+listado.length)
+
       for (var i = 0, tam = listado.length; i < tam; i++){
         if(ENCRYPTED){
-          inStream.push(JSON.stringify(encripcion.encripta(JSON.stringify(listado[i]),listado[i].iv,PASSWORD))+"\n")
+          let encdata = encripcion.encripta(JSON.stringify(listado[i].data),listado[i].data.iv,Buffer.from(listado[i].key,"base64"))
+          inStream.push(JSON.stringify(encdata)+"\n")
         }
         else{
-          inStream.push(JSON.stringify(listado[i])+"\n")
+          inStream.push(JSON.stringify(listado[i].data)+"\n")
         }
       }
       inStream.push(null);
-      console.log("Escribiendo Listado a Index. Canciones="+listado.length)
+      
     }
 
-    function checkDifIndex(dirList,musicIndex,globalIndexId){
+    function checkDifIndex(dirList,musicIndex,globalIndexId,key){
       let dirAddNew = []
       let indexOkList = []
       let diferentesAdd = 0
       let igualesAdd = 0
+      //console.log("DIFFINDEX key="+key)
+      // console.log("MUSICINDEX="+JSON.stringify(musicIndex))
       dirList.forEach( (element , ind) => {
         //console.log(element.path + "="+checkIgual(element.path,musicIndex))
-        if(checkIgual(element.path,musicIndex)){
-        igualesAdd++
+        if(!checkIsValidEncriptExtension(element.extension)){
+          if(checkIgual(element.path,musicIndex)){
+            igualesAdd++
+            }
+            else{
+              //-- porque es diferente
+              dirAddNew.push(element)
+              diferentesAdd++
+            }
         }
-        else{
-          //-- porque es diferente
-          dirAddNew.push(element)
-          diferentesAdd++
-        }
+
       })
+      console.log("===================================================================")
       console.log("DIR->IndexDB iquals="+igualesAdd+" changes="+diferentesAdd)
   
       let diferentesOk = 0
       let igualesOk = 0
       musicIndex.forEach( element => {
         if(checkIgual(element.path,dirList) || checkIgual(element.nameEnc,dirList)){
-          indexOkList.push(element)
+          indexOkList.push({data:element,"key":key})
           igualesOk++
         }
         else{
@@ -407,13 +508,14 @@ function readDirectory(bucket,pathMusic){
 
       })
       console.log("IndexDB->dir iquals="+igualesOk+" changes="+diferentesOk)
+      console.log("===================================================================")
       let estado = ""
       let checkIgualesOk = (igualesOk==musicIndex.length)
 
       if(checkIgualesOk && diferentesAdd==0) estado="NADA"
       if(!checkIgualesOk && diferentesAdd==0) estado="SOLOINDEXOK"
       if(diferentesAdd!=0) estado="ADDINDEX"
-      return {"dir":dirList,"index":musicIndex,"dirNew":dirAddNew,"indexOk":indexOkList,"globalIndexId":globalIndexId,"estado":estado}
+      return {"dir":dirList,"index":musicIndex,"dirNew":dirAddNew,"indexOk":indexOkList,"globalIndexId":globalIndexId,"key":key,"estado":estado}
     }
 
     function checkIgual(nombre,arr){
@@ -439,6 +541,12 @@ function readDirectory(bucket,pathMusic){
     // }
     return musicExtensions.includes(ext)
     //return false
+  }
+
+  function checkIsValidEncriptExtension(ext){
+    let valores = extensionArray.encriptionExtensiones()
+    return valores.includes(ext.toLowerCase())
+  
   }
 
   function getExtension(nombre){

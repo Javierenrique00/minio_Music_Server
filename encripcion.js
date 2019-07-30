@@ -1,6 +1,6 @@
 exports.encripta = function(data,ivParam,password){
 
-    let iv = new Buffer(ivParam,'base64')
+    let iv = Buffer.from(ivParam,'base64')
     let crypto = require('crypto')
     let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
     let  myStr = myKey.update(data,'utf8','base64')
@@ -9,7 +9,7 @@ exports.encripta = function(data,ivParam,password){
 }
 
 exports.encriptaBinary = function(data,ivParam,password){
-    let iv = new Buffer(ivParam,'base64')
+    let iv = Buffer.from(ivParam,'base64')
     let crypto = require('crypto')
     let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
     let  myStr = myKey.update(data.toString('hex'),"hex","hex")
@@ -18,7 +18,7 @@ exports.encriptaBinary = function(data,ivParam,password){
 }
 
 exports.desEncriptaBinary = function(data,ivParam,password){
-    let iv = new Buffer(ivParam,'base64')
+    let iv = Buffer.from(ivParam,'base64')
     let crypto = require('crypto')
     let myKey = crypto.createDecipheriv('aes-128-cbc',password,iv)
     let  myStr = myKey.update(data.toString('hex'),"hex","hex")
@@ -36,7 +36,7 @@ exports.desEncriptaBinary = function(data,ivParam,password){
 
 exports.encriptaHEX = function(data,ivParam,password){
 
-    let iv = new Buffer(ivParam,'base64')
+    let iv = Buffer.from(ivParam,'base64')
     let crypto = require('crypto')
     let myKey = crypto.createCipheriv('aes-128-cbc',password,iv)
     let  myStr = myKey.update(data,'utf8','hex')
@@ -49,10 +49,23 @@ exports.md5 = function(data){
     return crypto.createHash('md5').update(data).digest("hex");
 }
 
+exports.sha256Only16bytes = function(text){
+    let crypto = require('crypto')
+    let hash = crypto.createHash('sha256')
+    hash.update(text)
+    return hash.digest().slice(0,16)
+}
+
 exports.genIV = function(){
     let crypto = require('crypto')
-    let iv = new Buffer(crypto.randomBytes(16))
+    let iv = Buffer.from(crypto.randomBytes(16))
     return iv.toString('base64')
+}
+
+exports.genRandomKey = function(){
+    let crypto = require('crypto')
+    let key = Buffer.from(crypto.randomBytes(16))
+    return key.toString('base64')
 }
 
 
@@ -60,7 +73,7 @@ exports.desEncripta = function(data,password,ivParam){
 
     let crypto = require('crypto')
     
-    let iv = new Buffer(ivParam,'base64')
+    let iv = Buffer.from(ivParam,'base64')
     let myKey = crypto.createDecipheriv('aes-128-cbc',password,iv)
     let decStr = myKey.update(data,'base64','utf8')
     decStr += myKey.final('utf-8')
