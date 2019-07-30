@@ -24,7 +24,7 @@ CLoud Storages that are proven and worked with the MMEClient are: Minio, Azure o
 
 So you have plenty of options for storing your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access. Encrypted files are very useful when you use a public cloud and public access, so you don't expose your files. These files are public but the only way to know what is inside is decrypting them with your own key.
 
-To know more about enable encritption [here](doc/encryption.md)
+To know more about enable encrytption [here](doc/encryption.md)
 
 MMEClient can use more than one (1) cloud provider, and has no limit in the number of files, it also works with encrypted files.
 

@@ -2,9 +2,9 @@
 
 Because if you want to host your library in a public cloud that has good advantage like availability, low maintenance you sacrifice confidentiality, is a good option to encrypt all your library.
 
-To encript your library is necesary to recreate the index file, so you need to delete this file first. Then Enable encription in Minio Music server and run the program again.
+To encrypt your library is necesary to recreate the index file, so you need to delete this file first. Then Enable encryption in Minio Music server and run the program again.
 
-To eneble encryption you need to set these two fields, ENCRYPTED as true, and set a PASSWORD.
+To enable encryption you need to set these two fields, ENCRYPTED as true, and set a PASSWORD.
 
         const ENCRYPTED = true    //--- True for encrypted index database, False no encryption
         var PASSWORD = "xxx"      //----Choose a password
