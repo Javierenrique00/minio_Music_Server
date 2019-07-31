@@ -1,5 +1,6 @@
 //------ CONFIGURE --------------------------------
-let newPassword = "loquito" //---- to set the newpassword
+let newPassword = "xxx"     //---- to set the newpassword
+let newKeyFileName = "key2"  //---  name of the new key
 //-------------------------------
 
 const config = require("./config")
@@ -18,7 +19,7 @@ keyFile$.onValue( x =>{
 })
 
 newPassword$ = keyFile$.map( x=>{
-    return creatingKeyFile(valores.bucket,valores.keyFileName,x.data,encripcion.sha256Only16bytes(newPassword))
+    return creatingKeyFile(valores.bucket,newKeyFileName,x.data,encripcion.sha256Only16bytes(newPassword))
 })
 newPassword$.onValue( x =>{
     console.log("New Key File:")

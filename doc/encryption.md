@@ -26,16 +26,16 @@ Example of the data file:
 
 ![directory](./images/datadirectory.png "Directory")
 
-6- You can change the password configuring the file **changePwd.js** and configure the new password
+6- You can add a new key/password to access the index and files, configuring the file **newKeyPwd.js** and configure the new password
 
-                //------ CONFIGURE --------------------------------
-                let newPassword = "xxxxxxxxx" //---- to set the newpassword
-                //-------------------------------
+        let newPassword = "xxx"     //---- to set the newpassword
+        let newKeyFileName = "key2"  //---  name of the new key
+
 - Then run the command
 
-    **node changePwd.js**
+    **node newKeyPwd.js**
 
-7- To run again Minio music server with **node inicio.js**, don't forget to update the password to the new one that you configured.
+7- To run again Minio music server with **node inicio.js**, you can use the old key or the new key password combination. If you want, you can delete the old key, and rename the new one.
 
 **WARNING** To the public all the files are encrypted and are save. But you have to be carefull with the nodejs environment that has the password. MMeclient also has the password and is possible to capture it. 
 
