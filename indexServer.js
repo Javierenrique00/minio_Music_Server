@@ -172,7 +172,6 @@ function readDirectory(bucket,pathMusic){
   //---Revisa si se ha generado el archivo de encripcion
   function readKeyFile(bucket,keyFileName,PASSWORD){
     return Kefir.stream(emitter => {
-
       let file = []
       minioClient.getObject(bucket,keyFileName, function(err,dataStream){
         console.log("Looking for Key file...")

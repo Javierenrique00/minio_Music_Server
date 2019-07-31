@@ -56,45 +56,29 @@ Check version
   **node --version**
 
 4. Copy the node server program - minio_Music_server by cloning repository or copy javascript files from the github repository (*.js , *.json) to your working directory (any directory for the javascript program)
-5. Configure access to minio in the file inicio.js .  change in accordance to your configuration.
+5. Configure access to minio in the file config.js .  change in accordance to your configuration.
 
-#### inicio.js
+#### config.js
 
 Select S3 or Minio with:
 
-    const minio = true  //--- true for Minio, false fo Amazon S3 or a Minio gateway.
-    const SCAN_METADATA = true  //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
-                                //--- true for read all file and extract metadata information
-    const ENCRYPTED = false    //--- True for encrypted index database, False no encryption
-    var PASSWORD = "0123456789012345" //--- Has to be exact 16 characters 
+                                            //------------- CONFIGURATION 
 
-
-
-//--- Configuring Globals USE for Minio
-
-    var bucket = "test"                     //--- name of the bucket
-    var pathMusic = "music/"                //--- path to the music library that you want to index
-    var indexFileName = "music.index"       //--- leave a music.index (default)
-    var minioClient = new Minio.Client({
-        endPoint: '192.168.0.8',            //--- IP of the Minio Music Server where the music library lives
-        port: 9000,                         //--- Port of the Minio server (9000 is default)
-        useSSL: false,                      //--- without SSL, put true for SSL access
-        accessKey: 'admin',                 //---  Minio server Access key
-        secretKey: 'password'               //---  Minio server Secret Key
-    });
-
-----------------
-
-    //--- Configuring Globals USE for S3  Comment in case you have Minio
-    var bucket = "mipublico"                     //--- name of the bucket
-    var pathMusic = "music/"                     //--- path to the music library that you want to index
-    var indexFileName = "music.index"            //--- leave a music.index (default)
-    var minioClient = new Minio.Client({
-        endPoint: 's3.amazonaws.com',            //--- IP of Amazon
-        accessKey: 'XXXXXXXXXXX',       //---  Amazon server Access key
-        secretKey: 'XXXXXXXXXXXXXXXXXXXXX'   //---  Amazon Secret Key
-    });
-
+    let bucket = "bogota2"                  //--- name of the S3 bucket
+    let pathMusic = "data/"                 //--- path to the music library that you want to index
+    let indexFileName = "crypt.index"       //---Index file name
+    let endPoint= '192.168.0.16'            //--- IP of the Minio Music Server where the music library lives
+    let port = 9000                         //--- Port of the Minio server (9000 is default port)
+    let useSSL = false                      //--- without SSL, put true for SSL access
+    let accessKey = 'XXXX'                  //---  Minio server Access key           
+    let secretKey = 'XXXX'                  //---  Minio server Secret Key
+    let debounceDelay = '120000'            //--- 120 seconds for reindexing if are changes in de files
+    let minio = false                       //--- true for minio, false for Amazon S3 or a minio gateway with Google Storage Server or Microsoft azure
+    let scanMetadata = true                 //--- false for only read the basic data from directory listing, no metadata but is very fast because doesn't need to read all files for extracting metadata
+                                            //--- true for read all file and extract metadata information
+    let encrypted = true                    //--- True for encrypted index database, False no encryption
+    let keyFileName = "key"                 //--- FileName of the Key
+    let password = "XXXXXXX"                //--- Password for the encryption
 
 ----------------    
 6. From the command line in the path of your working directory run
