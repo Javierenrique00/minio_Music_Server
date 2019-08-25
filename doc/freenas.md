@@ -56,6 +56,8 @@ The idea is that Nodejs program is in a jail that is run automatically each time
 
     I create a file named **musicminio** in /usr/local/etc/rc.d with the content in the file you can check in [musicminio](/freenas/musicminio)
 
+    If the directory /usr/local/etc/rc.d does not exists in the jail create /rc.d and put the file **musicminio** inside it.
+
     Check that have execution rights.
 
     **ls -l**
