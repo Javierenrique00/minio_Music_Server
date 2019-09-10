@@ -173,36 +173,44 @@ function readDirectory(bucket,pathMusic){
   function readKeyFile(bucket,keyFileName,PASSWORD){
     return Kefir.stream(emitter => {
       let file = []
-      minioClient.getObject(bucket,keyFileName, function(err,dataStream){
-        console.log("Looking for Key file...")
-        if(err){
-          console.log("---NO KEY FOUND ----")
-          console.log("- Creating KEY")
-          let keyFile = creatingKeyFile(bucket,keyFileName,PASSWORD)
-          emitter.value(keyFile)
-          emitter.end()
-          return
-        }
-        dataStream.on('data',function(chunk){
-          file.push(chunk)
-        })
-        dataStream.on('end', function() {
-          let data = Buffer.concat(file)
-
-          //--desencripta el archivo recien leido
-          //console.log("DESENCRIPCION:"+JSON.stringify(JSON.parse(data)))
-          let lectura = JSON.parse(data)
-          let key = encripcion.desEncripta(lectura.data,PASSWORD,lectura.iv)
-          //console.log("Desencripcion key:"+key)
-          emitter.value({data:key,iv:lectura.iv})
-          emitter.end()
-        })
-        dataStream.on('error', function(err) {
-          console.log(err)
-          emitter.end()
-        })
+      if(ENCRYPTED){
+        minioClient.getObject(bucket,keyFileName, function(err,dataStream){
+          console.log("Looking for Key file...")
+          if(err){
+            console.log("---NO KEY FOUND ----")
+            console.log("- Creating KEY")
+            let keyFile = creatingKeyFile(bucket,keyFileName,PASSWORD)
+            emitter.value(keyFile)
+            emitter.end()
+            return
+          }
+          dataStream.on('data',function(chunk){
+            file.push(chunk)
+          })
+          dataStream.on('end', function() {
+            let data = Buffer.concat(file)
   
-      })
+            //--desencripta el archivo recien leido
+            //console.log("DESENCRIPCION:"+JSON.stringify(JSON.parse(data)))
+            let lectura = JSON.parse(data)
+            let key = encripcion.desEncripta(lectura.data,PASSWORD,lectura.iv)
+            //console.log("Desencripcion key:"+key)
+            emitter.value({data:key,iv:lectura.iv})
+            emitter.end()
+          })
+          dataStream.on('error', function(err) {
+            console.log(err)
+            emitter.end()
+          })
+    
+        })
+
+      }
+      else{
+        //--- no esta encriptado
+        emitter.value({data:0,iv:0})
+        emitter.end()
+      }
     })
   }
 
