@@ -1,6 +1,13 @@
 # minio_Music_Server
 Minio music Server is a nodejs program to control a music library with metadata in a Minio storage with automatic index creation.
 
+https://youtu.be/E9JXXjzcvns
+
+
+_Minio Music Server Video_
+
+[![Video](./doc/images/video_screen1_player.jpg)](https://youtu.be/E9JXXjzcvns)
+
 Is not a server in the strict sense, because the server is Minio, or the cloud storage that host the music.
 
 The idea is that you have your Music Library copied to a Object Storage Server or Minio server (just a bunch of .mp3, flac, ogg, wav, etc.), files in any folder structure), then the Music Server program indexed all data and extract metadata from the music. This indexed library can be accessed from an Android and then you can download the data that you want.
