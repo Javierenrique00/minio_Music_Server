@@ -14,9 +14,9 @@ The idea is that you have your Music Library copied to a Object Storage Server o
 
 The program works with Minio as a server and Amazon S3 storage in a direct way, but you can configure Minio Azure Gateway, Minio GCS (google cloud storage) or BackBlaze B2 to serve the music files. The difference is that in Minio it detects the changes in the music Library. With S3 and Minio Gateways you run the program each time the library changes to reindex the music library.
 
-The final result of this program is to make the index file. example: "music.index".  Optionally, you can choose encryption, and all of the multimedia files and index file get encrypted. You can delete de unencripted files and the index file gets the link to the encrypted version. 
+The final result of this program is to make the index file. example: "music.index".  Optionally, you can choose encryption, and all of the multimedia files and index file get encrypted. You can delete the unencripted files and the index file gets the link to the encrypted version. 
 
-In this repository directories you can find the old version (procedural Version and obsolete version) of the program. The program was re engineered to be reactive using only data flows with the help of Kefir.js library.
+In this repository you can find the old version (procedural Version and obsolete version) of the program. The program was re engineered to be reactive using only data flows with the help of Kefir.js library.
 
 Because I was not acustom to think in a reactive functional form, I want to tell that it was hard to find wich is the way for FRP - functional reactive programing, and I found that is not easy but the final code result is less messy to understand.
 
