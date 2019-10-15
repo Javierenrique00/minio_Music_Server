@@ -104,7 +104,11 @@ To access your Media library use MMEClient for Android, check that your files in
 
 To see how to setup a freenas [here](doc/freenas.md)
 
+To see how to setup __Minio_music_server__ in Android [here](doc/android.md)
+
 To see my functional reactive programing toughts [here](doc/reactive.md)
+
+
 
 
 
