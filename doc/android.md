@@ -1,11 +1,11 @@
 # Running in Android
 
-With __Dory - Node.js__ is it possible to run __Minio_music_server__ in Android directly. Is not the best idea but is possible.
+With __Dory - Node.js__ it is possible to run __Minio_music_server__ in Android directly. Is not the best idea but is possible.
 
 ## Why is not a good idea ? ##
-If you have the music library in the cloud in Amazon S3 for example, you need to first put the Music file in the cloud, (Could be possible to do with any compatible S3 android software like __MMe Connections__ free in Android [Link:](https://play.google.com/store/apps/details?id=com.mundocreativo.javier.mmeconnections&hl=en)), then run Minio Music Server in the Android device, that internally bring the song to the Android device, extracts metadata, and if the sing requires encryption has to be uploaded encrypted. So The  music data has to be transported three (3) times from the Android device to the storage. Usually Android runs in Wi-fi and the information travels over Internet so the speed is not so good and could be expensive because uploading and downloading can incure in costs.
+If you have the music library in the cloud in Amazon S3 for example, you need to first put the Music file in the cloud, (Could be possible to do with any compatible S3 android software like __MMe Connections__ free in Android [Link:](https://play.google.com/store/apps/details?id=com.mundocreativo.javier.mmeconnections&hl=en)), then run Minio Music Server in the Android device, that internally bring the song to the Android device, extracts metadata, and if the sing requires encryption has to be uploaded encrypted. So The  music data has to be transported three (3) times from the Android device to the storage. Usually Android runs in Wi-fi and the information travels over Internet so the speed is not so good and could be expensive because uploading and downloading can incur in costs.
 
-If you run the Min.io server local, the idea is to have the node server running __Minio_music_server__  as you can see for example in freenas here: To see how to setup a freenas [here](../doc/freenas.md) like a daemon to make all this stuff automatically so is not need to be running from Android device. If you have Min.io in Linux or Windows, you can also have a resident instance of node.js running __Minio_music_server__ point to your min.io server indexing the music library.
+If you run the Min.io server local, the idea is to have the node server running __Minio_music_server__  as you can see for example in freenas [here](../doc/freenas.md) like a daemon to make all this stuff automatically so does not need to be running from Android device. If you have Min.io in Linux or Windows, you can also have a resident instance of node.js running __Minio_music_server__ and point to your min.io server indexing the music library.
 
 
 ## Why could be a good idea ? ##
@@ -15,7 +15,7 @@ But if you want to test by yourself you could try.
 
 The documentation about __Dory - node.js__ is not so good but once you understand what is the logic of the program it is easy.
 
-To run
+## To run __Minio_music_server__
 
 1. Download and install Dory - node.js  [Link:](https://play.google.com/store/apps/details?id=io.tempage.dorynode&hl=en)
 
@@ -23,7 +23,9 @@ To run
 
 ![versions](../doc/images/dory_versions.jpg "Dory")
 
-To check the version, enter to the shell in the menu to the right and select __Shell__.
+Once __Dory - node.js__ is installed, Run it.
+
+Then, to check the version, enter to the Shell in the menu to the right and select __Shell__.
 
 ![menu](../doc/images/dorynode_0.jpg "menu")
 
@@ -34,7 +36,9 @@ Write __node -v__ in the console, check the version, and then close with the __X
 
 ## To update the version: ##
 
-But is not easy to understand the instructions. It said: __'download file' menu -> check 'appfiles' -> check 'executable'__
+Is not easy to understand the instructions. It said very brief: __'download file' menu -> check 'appfiles' -> check 'executable'__
+
+This is a step by step instructions.
 
 From the Menu to the right select -> __Download file__
 
@@ -52,7 +56,7 @@ Then check the version of node again after the update in the __Shell__.
 
 Close the __Shell__
 
-3. Then download from github the __Minio_music_server__ program.
+3. Then download from github __Minio_music_server__ program.
 
 First get the repository link copied ready to be pasted in Android, then in __Dory - Node.js__ app in the menu to the right select __git clone__
 
