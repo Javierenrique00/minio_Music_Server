@@ -27,7 +27,7 @@ I made an Android program called MMEClient, to read the index and download multi
 
 If you have some storage in the cloud that can work with direct links you can use Minio Music Server. You can also create by hand the "music.index" file and use the MMEClient Android program to search/download music files. To see a description of the "Music.index" file [here](doc/indexDescription.md)
 
-CLoud Storages that are proven and worked with the MMEClient are: Minio, Azure object storage, Google CLoud Storage, Amazon S3, PCloud (Direct Links enabled with Public access ), BackBlaze B2.
+CLoud Storages that are proven and worked with the MMEClient are: Minio, Azure object storage, Google CLoud Storage, Amazon S3, PCloud (Direct Links enabled with Public access ), BackBlaze B2 and even works with IPFS (Interplanetary File system)
 
 So you have plenty of options for storing your files. Each cloud provider have special and different procedures to enable direct links and anonymous public access. Encrypted files are very useful when you use a public cloud and public access, so you don't expose your files. These files are public but the only way to know what is inside is decrypting them with your own key.
 
