@@ -18,7 +18,7 @@ The final result of this program is to make the index file. example: "music.inde
 
 In this repository you can find the old version (procedural Version and obsolete version) of the program. The program was re engineered to be reactive using only data flows with the help of Kefir.js library.
 
-Because I was not acustom to think in a reactive functional form, I want to tell that it was hard to find wich is the way for FRP - functional reactive programing, and I found that is not easy but the final code result is less messy to understand.
+The active version that works with encryption is in the root (./) so you can run in Nodejs the program in the root folder.
 
 ![Diagram](./doc/images/img1_diagram.jpg "Diagram")
 
